@@ -5,15 +5,22 @@ export type ConversationStatus =
 
 export interface Conversation {
   id: string
-  tenant_id: string
-  channel_id: string
+  tenant_id?: string
+  channel_id?: string
   customer_id: string
   professional_id?: string
   status: ConversationStatus
+  priority?: number
   started_at: string
   updated_at: string
   customer_name?: string
   customer_phone?: string
+  // original RPC fields
+  last_message_text?: string | null
+  last_message_at?: string | null
+  msg_count?: number
+  assigned_user_id?: string | null
+  // compat alias
   last_message?: string
   message_count?: number
 }
@@ -45,19 +52,29 @@ export interface Customer {
 
 // ─── Appointments ────────────────────────────────────────────────────────────
 
+export type AppointmentStatus = 'scheduled' | 'confirmed' | 'cancelled' | 'completed' | 'no_show' | 'pending'
+
 export interface Appointment {
   id: string
-  tenant_id: string
+  tenant_id?: string
   customer_id: string
   professional_id: string
   service_id: string
-  scheduled_at: string
-  duration_minutes: number
-  status: 'scheduled' | 'confirmed' | 'cancelled' | 'completed'
+  // original RPC fields
+  scheduled_start_at?: string
+  scheduled_end_at?: string
+  // compat alias
+  scheduled_at?: string
+  duration_minutes?: number
+  service_duration?: number
+  status: AppointmentStatus
   notes?: string
   customer_name?: string
+  customer_phone?: string
   professional_name?: string
+  professional_specialty?: string
   service_name?: string
+  created_at?: string
 }
 
 // ─── Services ────────────────────────────────────────────────────────────────
@@ -113,13 +130,31 @@ export interface MessageTemplate {
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 export interface DashboardSummary {
-  total_conversations: number
-  open_conversations: number
-  pending_conversations: number
-  resolved_today: number
-  avg_response_seconds: number
-  appointments_today: number
-  new_customers_week: number
+  customers:     { total: number; leads: number; active: number; new_today: number; new_week: number }
+  conversations: { total: number; open: number; bot_active: number; waiting_human: number; resolved: number; resolved_today: number; pending: number }
+  messages:      { total: number; today: number; inbound: number; outbound: number }
+  appointments:  { total: number; today: number; tomorrow: number; confirmed: number; pending: number; completed: number; cancelled: number; no_show: number }
+  jobs:          { total: number; pending: number; completed: number; failed: number }
+  reminders:     { rules_active: number; dispatches_sent: number; dispatches_failed: number }
+  performance:   { avg_first_response_seconds: number; avg_resolution_seconds: number; bot_resolution_rate: number; handoff_rate: number }
+  generated_at:  string
+}
+
+export interface DailyMetric {
+  date: string           // YYYY-MM-DD
+  conversations: number
+  resolved: number
+  handoffs: number
+  bot_resolved: number
+  new_customers: number
+}
+
+export interface DailyAppointmentMetric {
+  date: string
+  total: number
+  confirmed: number
+  completed: number
+  cancelled: number
 }
 
 // ─── AI: Conversation Summaries ──────────────────────────────────────────────

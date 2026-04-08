@@ -1,6 +1,8 @@
 import { supabase, TENANT_ID, CHANNEL_ID } from './supabase'
 import type {
   DashboardSummary,
+  DailyMetric,
+  DailyAppointmentMetric,
   Conversation,
   Message,
   Customer,
@@ -40,6 +42,14 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
   return rpc('rpc_dashboard_summary', { p_tenant_id: TENANT_ID })
 }
 
+export async function getConversationsTrend(days = 30): Promise<DailyMetric[]> {
+  return rpc('rpc_conversations_trend', { p_tenant_id: TENANT_ID, p_days: days })
+}
+
+export async function getAppointmentsTrend(days = 30): Promise<DailyAppointmentMetric[]> {
+  return rpc('rpc_appointments_trend', { p_tenant_id: TENANT_ID, p_days: days })
+}
+
 // ─── Conversations ───────────────────────────────────────────────────────────
 
 export async function listConversations(status?: string): Promise<Conversation[]> {
@@ -56,11 +66,16 @@ export async function getConversationMessages(conversationId: string): Promise<M
   })
 }
 
-export async function assumirConversa(conversationId: string, agentId: string): Promise<void> {
+// Placeholder user ID for unauthenticated dashboard actions
+const DASHBOARD_USER_ID = '00000000-0000-0000-0000-000000000001'
+const DASHBOARD_USER_NAME = 'Agente Dashboard'
+
+export async function assumirConversa(conversationId: string, agentId?: string): Promise<void> {
   await rpc('rpc_assumir_conversa', {
     p_tenant_id: TENANT_ID,
     p_conversation_id: conversationId,
-    p_agent_id: agentId,
+    p_user_id: agentId ?? DASHBOARD_USER_ID,
+    p_user_name: DASHBOARD_USER_NAME,
   })
 }
 
@@ -68,7 +83,9 @@ export async function registrarNota(conversationId: string, nota: string): Promi
   await rpc('rpc_registrar_nota', {
     p_tenant_id: TENANT_ID,
     p_conversation_id: conversationId,
-    p_nota: nota,
+    p_user_id: DASHBOARD_USER_ID,
+    p_user_name: DASHBOARD_USER_NAME,
+    p_nota_text: nota,
   })
 }
 
@@ -76,6 +93,8 @@ export async function encerrarConversa(conversationId: string): Promise<void> {
   await rpc('rpc_encerrar_conversa', {
     p_tenant_id: TENANT_ID,
     p_conversation_id: conversationId,
+    p_user_id: DASHBOARD_USER_ID,
+    p_user_name: DASHBOARD_USER_NAME,
   })
 }
 
@@ -100,7 +119,8 @@ export async function getCustomer(customerId: string): Promise<Customer | null> 
 export async function listAppointments(date?: string): Promise<Appointment[]> {
   return rpc('rpc_list_appointments', {
     p_tenant_id: TENANT_ID,
-    p_date: date ?? null,
+    p_date_from: date ?? null,
+    p_date_to: date ?? null,
   })
 }
 
@@ -108,12 +128,21 @@ export async function criarAgendamento(params: {
   customer_id: string
   professional_id: string
   service_id: string
-  scheduled_at: string
+  start_at: string
+  end_at: string
   notes?: string
 }): Promise<void> {
   await rpc('rpc_criar_agendamento_dashboard', {
     p_tenant_id: TENANT_ID,
-    ...params,
+    p_customer_id: params.customer_id,
+    p_professional_id: params.professional_id,
+    p_service_id: params.service_id,
+    p_start_at: params.start_at,
+    p_end_at: params.end_at,
+    p_user_id: DASHBOARD_USER_ID,
+    p_user_name: DASHBOARD_USER_NAME,
+    p_conversation_id: null,
+    p_notes: params.notes ?? null,
   })
 }
 

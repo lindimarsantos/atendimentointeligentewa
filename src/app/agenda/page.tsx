@@ -72,12 +72,12 @@ export default function AgendaPage() {
                 <li key={a.id} className="flex items-center gap-4 px-6 py-4">
                   <div className="flex items-center gap-1.5 text-sm text-gray-500 w-14 shrink-0">
                     <Clock className="h-3.5 w-3.5" />
-                    {fmtDateTime(a.scheduled_at).split(' às ')[1] ?? '—'}
+                    {fmtDateTime(a.scheduled_start_at ?? a.scheduled_at ?? '').split(' às ')[1] ?? '—'}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">{a.customer_name ?? 'Cliente'}</p>
                     <p className="text-xs text-gray-500">
-                      {a.service_name} · {a.professional_name} · {a.duration_minutes}min
+                      {a.service_name} · {a.professional_name} · {a.service_duration ?? a.duration_minutes ?? '?'}min
                     </p>
                   </div>
                   <Badge variant={s.variant}>{s.label}</Badge>
