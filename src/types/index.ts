@@ -1,138 +1,372 @@
-// ─── Enums ───────────────────────────────────────────────────────────────────
+// ─── Conversations ──────────────────────────────────────────────────────────
 
 export type ConversationStatus =
   | 'open' | 'pending' | 'resolved' | 'bot_active' | 'waiting_human'
 
-export type AppointmentStatus =
-  | 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show' | 'rescheduled'
-
-export type MessageDirection = 'inbound' | 'outbound' | 'internal'
-export type SenderType      = 'customer' | 'bot' | 'agent' | 'system'
-export type JobStatus       = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
-export type CustomerStatus  = 'lead' | 'prospect' | 'active' | 'inactive'
-
-// ─── Entities ─────────────────────────────────────────────────────────────────
-
-export interface DashboardSummary {
-  customers:     { total: number; leads: number; active: number; new_today: number }
-  conversations: { total: number; open: number; bot_active: number; waiting_human: number; resolved: number; pending: number }
-  messages:      { total: number; today: number; inbound: number; outbound: number }
-  appointments:  { total: number; today: number; tomorrow: number; confirmed: number; pending: number; completed: number; cancelled: number; no_show: number }
-  jobs:          { total: number; pending: number; completed: number; failed: number }
-  reminders:     { rules_active: number; dispatches_sent: number; dispatches_failed: number }
-  generated_at:  string
-}
-
 export interface Conversation {
-  id:                uuid
-  status:            ConversationStatus
-  priority:          number
-  customer_id:       uuid
-  customer_name:     string
-  customer_phone:    string
-  last_message_text: string | null
-  last_message_at:   string | null
-  msg_count:         number
-  assigned_user_id:  uuid | null
-  updated_at:        string
-  started_at:        string
-}
-
-export interface Appointment {
-  id:                    uuid
-  status:                AppointmentStatus
-  scheduled_start_at:    string
-  scheduled_end_at:      string
-  customer_id:           uuid
-  customer_name:         string
-  customer_phone:        string
-  professional_id:       uuid
-  professional_name:     string
-  professional_specialty:string
-  service_id:            uuid
-  service_name:          string
-  service_duration:      number
-  created_at:            string
+  id: string
+  tenant_id: string
+  channel_id: string
+  customer_id: string
+  professional_id?: string
+  status: ConversationStatus
+  started_at: string
+  updated_at: string
+  customer_name?: string
+  customer_phone?: string
+  last_message?: string
+  message_count?: number
 }
 
 export interface Message {
-  id:              uuid
-  direction:       MessageDirection
-  sender_type:     SenderType
-  content_text:    string | null
-  created_at:      string
+  id: string
+  conversation_id: string
+  direction: 'inbound' | 'outbound'
+  content_type: 'text' | 'audio' | 'image' | 'document'
+  content_text?: string
+  media_url?: string
+  sender_type: 'customer' | 'agent' | 'bot'
+  sent_at: string
+  intent?: MessageIntent
 }
+
+// ─── Customers ───────────────────────────────────────────────────────────────
 
 export interface Customer {
-  id:                 uuid
-  full_name:          string
-  phone_e164:         string | null
-  email:              string | null
-  status:             CustomerStatus
-  first_contact_at:   string | null
-  last_interaction_at:string | null
+  id: string
+  tenant_id: string
+  name: string
+  phone: string
+  email?: string
+  tags?: string[]
+  created_at: string
+  updated_at: string
 }
 
-export interface Professional {
-  id:        uuid
-  name:      string
-  specialty: string | null
-  status:    string
+// ─── Appointments ────────────────────────────────────────────────────────────
+
+export interface Appointment {
+  id: string
+  tenant_id: string
+  customer_id: string
+  professional_id: string
+  service_id: string
+  scheduled_at: string
+  duration_minutes: number
+  status: 'scheduled' | 'confirmed' | 'cancelled' | 'completed'
+  notes?: string
+  customer_name?: string
+  professional_name?: string
+  service_name?: string
 }
+
+// ─── Services ────────────────────────────────────────────────────────────────
 
 export interface Service {
-  id:               uuid
-  name:             string
-  duration_minutes: number | null
-  price_from:       number | null
-  price_to:         number | null
-  is_active:        boolean
-}
-
-export interface WhatsAppTemplate {
-  id:        uuid
-  code:      string
-  name:      string
-  category:  string
-  body_text: string | null
+  id: string
+  tenant_id: string
+  name: string
+  description?: string
+  duration_minutes: number
+  price_min?: number
+  price_max?: number
+  requires_evaluation: boolean
   is_active: boolean
 }
 
-export interface ReminderRule {
-  id:           uuid
-  name:         string
-  trigger_type: string
-  hours_before: number
-  is_active:    boolean
+// ─── Professionals ───────────────────────────────────────────────────────────
+
+export interface Professional {
+  id: string
+  tenant_id: string
+  name: string
+  specialty?: string
+  bio?: string
+  is_active: boolean
 }
 
-export interface ReminderDispatch {
-  id:             uuid
-  status:         string
-  dispatched_at:  string | null
-  error_message:  string | null
-  created_at:     string
+// ─── Campaigns / Templates ───────────────────────────────────────────────────
+
+export interface Campaign {
+  id: string
+  tenant_id: string
+  name: string
+  status: 'draft' | 'scheduled' | 'running' | 'completed' | 'paused'
+  template_id?: string
+  target_count?: number
+  sent_count?: number
+  scheduled_at?: string
+  created_at: string
 }
 
-export interface JobQueueItem {
-  id:          uuid
-  queue_name:  string
-  job_type:    string
-  status:      JobStatus
-  attempts:    number
-  max_attempts:number
-  last_error:  string | null
-  updated_at:  string
+export interface MessageTemplate {
+  id: string
+  tenant_id: string
+  name: string
+  category: string
+  language: string
+  status: 'approved' | 'pending' | 'rejected'
+  components: unknown[]
+  created_at: string
 }
 
-// ─── RPC responses ────────────────────────────────────────────────────────────
+// ─── Dashboard ───────────────────────────────────────────────────────────────
 
-export interface RpcActionResult {
-  ok:    boolean
+export interface DashboardSummary {
+  total_conversations: number
+  open_conversations: number
+  pending_conversations: number
+  resolved_today: number
+  avg_response_seconds: number
+  appointments_today: number
+  new_customers_week: number
+}
+
+// ─── AI: Conversation Summaries ──────────────────────────────────────────────
+
+export interface ConversationSummary {
+  id: string
+  conversation_id: string
+  summary_type: 'running' | 'closure' | 'handoff'
+  summary_text: string
+  facts_jsonb?: Record<string, unknown>
+  open_items_jsonb?: unknown[]
+  created_at: string
+}
+
+// ─── AI: Customer Memories ───────────────────────────────────────────────────
+
+export type MemoryType =
+  | 'profile' | 'preference' | 'objection'
+  | 'clinical_interest' | 'schedule_preference' | 'relationship'
+
+export interface CustomerMemory {
+  id: string
+  customer_id: string
+  memory_type: MemoryType
+  content_text: string
+  importance_score: number
+  is_active: boolean
+  last_used_at?: string
+  created_at: string
+}
+
+// ─── AI: Decisions ───────────────────────────────────────────────────────────
+
+export type DecisionType =
+  | 'reply' | 'handoff' | 'schedule' | 'recommend_service'
+  | 'request_more_data' | 'block'
+
+export interface AiDecision {
+  id: string
+  conversation_id: string
+  ai_session_id?: string
+  decision_type: DecisionType
+  decision_reason?: string
+  confidence_score: number
+  input_context_jsonb?: Record<string, unknown>
+  output_payload_jsonb?: Record<string, unknown>
+  approved_by_rule?: string
+  created_at: string
+}
+
+// ─── AI: Message Intents ─────────────────────────────────────────────────────
+
+export interface MessageIntent {
+  id: string
+  message_id: string
+  intent_code: string
+  confidence_score: number
+  entities_jsonb?: Record<string, unknown>
+}
+
+// ─── Config: AI Agent Profile ────────────────────────────────────────────────
+
+export type AgentTone = 'empatico' | 'profissional' | 'informal' | 'neutro'
+export type AgentVerbosity = 'conciso' | 'moderado' | 'detalhado'
+
+export interface AiAgentProfile {
+  id: string
+  tenant_id: string
+  profile_name: string
+  objective?: string
+  tone: AgentTone
+  verbosity: AgentVerbosity
+  escalation_policy?: string
+  use_memory: boolean
+  use_recommendations: boolean
+  use_scheduling: boolean
+  allow_voice_response: boolean
+  config_jsonb?: Record<string, unknown>
+  updated_at: string
+}
+
+// ─── AI: Agent (technical) ───────────────────────────────────────────────────
+
+export interface AiAgent {
+  id: string
+  tenant_id: string
+  name: string
+  status: 'active' | 'inactive'
+  model_name: string
+  system_prompt: string
+  temperature: number
+  max_tokens: number
+  policy_jsonb?: Record<string, unknown>
+  tools_jsonb?: Record<string, unknown>
+  updated_at: string
+}
+
+// ─── Config: Prompt Templates ────────────────────────────────────────────────
+
+export interface PromptTemplate {
+  id: string
+  tenant_id: string
+  code: string
+  title: string
+  prompt_text: string
+  version: number
+  is_active: boolean
+  metadata_jsonb?: Record<string, unknown>
+  updated_at: string
+}
+
+// ─── Config: Business Hours ──────────────────────────────────────────────────
+
+export interface BusinessHour {
+  id: string
+  tenant_id: string
+  day_of_week: number   // 0=Sun, 6=Sat
+  open_time: string     // HH:mm
+  close_time: string    // HH:mm
+  is_open: boolean
+}
+
+// ─── Config: Channel Settings ────────────────────────────────────────────────
+
+export interface ChannelSettings {
+  id: string
+  tenant_id: string
+  channel_id: string
+  welcome_message?: string
+  out_of_hours_message?: string
+  handoff_message?: string
+  buffer_active: boolean
+  typing_simulation: boolean
+  updated_at: string
+}
+
+// ─── Config: Tenant Settings ─────────────────────────────────────────────────
+
+export interface TenantSettings {
+  id: string
+  tenant_id: string
+  business_name: string
+  timezone: string
+  language: string
+  intake_mode: 'bot_first' | 'human_first' | 'mixed'
+  allow_audio: boolean
+  allow_image: boolean
+  allow_voice: boolean
+  human_approval_high_risk: boolean
+  auto_create_customer: boolean
+  updated_at: string
+}
+
+// ─── Config: Handoff Rules ───────────────────────────────────────────────────
+
+export type HandoffTriggerType = 'keyword' | 'sentiment' | 'schedule' | 'attempts'
+
+export interface HandoffRule {
+  id: string
+  tenant_id: string
+  rule_name: string
+  trigger_type: HandoffTriggerType
+  trigger_config_jsonb: Record<string, unknown>
+  target_role: string
+  is_active: boolean
+  updated_at: string
+}
+
+// ─── Config: SLA Rules ───────────────────────────────────────────────────────
+
+export interface SlaRule {
+  id: string
+  tenant_id: string
+  priority: string
+  first_response_seconds: number
+  resolution_seconds: number
+  business_hours_only: boolean
+  is_active: boolean
+}
+
+// ─── Config: Feature Flags ───────────────────────────────────────────────────
+
+export interface FeatureFlag {
+  id: string
+  tenant_id: string
+  code: string
+  is_enabled: boolean
+  config_jsonb?: Record<string, unknown>
+  updated_at: string
+}
+
+// ─── AI: Voice Profiles ──────────────────────────────────────────────────────
+
+export interface VoiceProfile {
+  id: string
+  tenant_id: string
+  name: string
+  provider: string
+  voice_external_id: string
+  language_code: string
+  gender: 'male' | 'female' | 'neutral'
+  settings_jsonb?: Record<string, unknown>
+  is_default: boolean
+  updated_at: string
+}
+
+// ─── Audit ───────────────────────────────────────────────────────────────────
+
+export type AuditAction =
+  | 'insert' | 'update' | 'delete' | 'sync' | 'decision' | 'handoff' | 'login'
+
+export type AuditActorType = 'system' | 'ai' | 'agent' | 'customer' | 'integration'
+
+export interface AuditLog {
+  id: string
+  entity_type: string
+  entity_id: string
+  action: AuditAction
+  actor_type: AuditActorType
+  actor_id?: string
+  before_jsonb?: Record<string, unknown>
+  after_jsonb?: Record<string, unknown>
+  metadata_jsonb?: Record<string, unknown>
+  created_at: string
+}
+
+export interface IntegrationLog {
+  id: string
+  tenant_id: string
+  integration_name: string
+  direction: 'inbound' | 'outbound'
+  external_id?: string
+  status: 'success' | 'error' | 'pending'
+  payload_jsonb?: Record<string, unknown>
+  response_jsonb?: Record<string, unknown>
+  error_jsonb?: Record<string, unknown>
+  created_at: string
+}
+
+// ─── Observability ───────────────────────────────────────────────────────────
+
+export interface JobEntry {
+  id: string
+  job_type: string
+  status: 'pending' | 'running' | 'done' | 'failed'
+  payload?: Record<string, unknown>
   error?: string
-  [key: string]: unknown
+  created_at: string
+  updated_at: string
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export type uuid = string

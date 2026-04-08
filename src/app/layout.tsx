@@ -1,16 +1,18 @@
 import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
 import './globals.css'
+import { DashboardLayout } from '@/components/layout/DashboardLayout'
 
 export const metadata: Metadata = {
-  title: 'AtendimentoIA — Dashboard',
-  description: 'Plataforma de Atendimento Inteligente via WhatsApp',
+  title: 'Atendimento Inteligente WA',
+  description: 'Dashboard de atendimento via WhatsApp com IA',
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <DashboardLayout>{children}</DashboardLayout>
+      </body>
     </html>
   )
 }

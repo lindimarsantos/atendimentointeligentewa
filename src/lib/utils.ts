@@ -1,91 +1,85 @@
-import { format, formatDistanceToNow } from 'date-fns'
+import { clsx, type ClassValue } from 'clsx'
+import { format, formatDistanceToNow, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { ConversationStatus, AppointmentStatus, JobStatus, CustomerStatus } from '@/types'
 
-// ─── Data/hora ────────────────────────────────────────────────────────────────
-
-export function fmtDateTime(d: string | null | undefined): string {
-  if (!d) return '—'
-  return format(new Date(d), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+export function cn(...inputs: ClassValue[]) {
+  return clsx(inputs)
 }
 
-export function fmtDate(d: string | null | undefined): string {
-  if (!d) return '—'
-  return format(new Date(d), 'dd/MM/yyyy', { locale: ptBR })
-}
-
-export function timeAgo(d: string | null | undefined): string {
-  if (!d) return '—'
-  return formatDistanceToNow(new Date(d), { locale: ptBR, addSuffix: true })
-}
-
-export function toDatetimeLocal(d: Date): string {
-  return d.toISOString().slice(0, 16)
-}
-
-// ─── Iniciais ─────────────────────────────────────────────────────────────────
-
-export function initials(name: string | null | undefined): string {
-  if (!name || name === 'Desconhecido') return '??'
-  return name
-    .split(' ')
-    .map(w => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
-
-// ─── Badges / labels ──────────────────────────────────────────────────────────
-
-type BadgeVariant = 'bot' | 'open' | 'human' | 'success' | 'muted' | 'purple'
-
-export function convStatusVariant(s: ConversationStatus): BadgeVariant {
-  const map: Record<ConversationStatus, BadgeVariant> = {
-    bot_active:    'bot',
-    open:          'open',
-    waiting_human: 'human',
-    resolved:      'success',
-    pending:       'muted',
+export function fmtDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—'
+  try {
+    return format(parseISO(dateStr), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+  } catch {
+    return dateStr
   }
-  return map[s] ?? 'muted'
 }
 
-export function aptStatusVariant(s: AppointmentStatus): BadgeVariant {
-  const map: Record<AppointmentStatus, BadgeVariant> = {
-    confirmed:   'success',
-    completed:   'success',
-    pending:     'bot',
-    cancelled:   'muted',
-    no_show:     'human',
-    rescheduled: 'purple',
+export function fmtDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—'
+  try {
+    return format(parseISO(dateStr), 'dd/MM/yyyy', { locale: ptBR })
+  } catch {
+    return dateStr
   }
-  return map[s] ?? 'muted'
 }
 
-export function jobStatusVariant(s: JobStatus): BadgeVariant {
-  const map: Record<JobStatus, BadgeVariant> = {
-    completed:  'success',
-    pending:    'bot',
-    processing: 'open',
-    failed:     'human',
-    cancelled:  'muted',
+export function fmtTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—'
+  try {
+    return format(parseISO(dateStr), 'HH:mm', { locale: ptBR })
+  } catch {
+    return dateStr
   }
-  return map[s] ?? 'muted'
 }
 
-export function custStatusVariant(s: CustomerStatus): BadgeVariant {
-  const map: Record<CustomerStatus, BadgeVariant> = {
-    active:   'success',
-    prospect: 'open',
-    lead:     'muted',
-    inactive: 'muted',
+export function timeAgo(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—'
+  try {
+    return formatDistanceToNow(parseISO(dateStr), { addSuffix: true, locale: ptBR })
+  } catch {
+    return dateStr
   }
-  return map[s] ?? 'muted'
 }
 
-// ─── Moeda ────────────────────────────────────────────────────────────────────
+export function fmtSeconds(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}min`
+  return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}min`
+}
 
-export function fmtBRL(v: number | null | undefined): string {
-  if (v == null) return '—'
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+export const statusVariants: Record<string, string> = {
+  open:          'bg-blue-100 text-blue-800',
+  pending:       'bg-yellow-100 text-yellow-800',
+  resolved:      'bg-green-100 text-green-800',
+  bot_active:    'bg-purple-100 text-purple-800',
+  waiting_human: 'bg-orange-100 text-orange-800',
+}
+
+export const decisionVariants: Record<string, string> = {
+  reply:               'bg-blue-100 text-blue-700',
+  handoff:             'bg-red-100 text-red-700',
+  schedule:            'bg-green-100 text-green-700',
+  recommend_service:   'bg-purple-100 text-purple-700',
+  request_more_data:   'bg-yellow-100 text-yellow-700',
+  block:               'bg-gray-100 text-gray-700',
+}
+
+export const memoryTypeVariants: Record<string, string> = {
+  profile:             'bg-blue-100 text-blue-700',
+  preference:          'bg-green-100 text-green-700',
+  objection:           'bg-red-100 text-red-700',
+  clinical_interest:   'bg-purple-100 text-purple-700',
+  schedule_preference: 'bg-yellow-100 text-yellow-700',
+  relationship:        'bg-pink-100 text-pink-700',
+}
+
+export const auditActionVariants: Record<string, string> = {
+  insert:   'bg-green-100 text-green-700',
+  update:   'bg-blue-100 text-blue-700',
+  delete:   'bg-red-100 text-red-700',
+  sync:     'bg-purple-100 text-purple-700',
+  decision: 'bg-yellow-100 text-yellow-700',
+  handoff:  'bg-orange-100 text-orange-700',
+  login:    'bg-gray-100 text-gray-700',
 }

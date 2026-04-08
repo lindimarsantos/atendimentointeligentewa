@@ -10,18 +10,17 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50:  '#E6F1FB',
-          100: '#B5D4F4',
-          200: '#85B7EB',
-          400: '#378ADD',
-          600: '#185FA5',
-          800: '#0C447C',
-          900: '#042C53',
+          50:  '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
         },
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
     },
   },

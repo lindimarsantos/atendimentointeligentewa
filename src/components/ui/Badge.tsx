@@ -1,32 +1,30 @@
-import { clsx } from 'clsx'
-
-type Variant = 'bot' | 'open' | 'human' | 'success' | 'muted' | 'purple'
+import { cn } from '@/lib/utils'
 
 interface BadgeProps {
-  label: string
-  variant?: Variant
+  children: React.ReactNode
   className?: string
+  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'purple'
 }
 
-const styles: Record<Variant, string> = {
-  bot:     'bg-[var(--color-warning-bg)] text-[var(--color-warning-fg)]',
-  open:    'bg-[var(--color-info-bg)]    text-[var(--color-info-fg)]',
-  human:   'bg-[var(--color-danger-bg)]  text-[var(--color-danger-fg)]',
-  success: 'bg-[var(--color-success-bg)] text-[var(--color-success-fg)]',
-  muted:   'bg-[var(--color-surface-2)]  text-[var(--color-text-2)]',
-  purple:  'bg-[var(--color-purple-bg)]  text-[var(--color-purple-fg)]',
+const variants = {
+  default: 'bg-gray-100 text-gray-700',
+  success: 'bg-green-100 text-green-700',
+  warning: 'bg-yellow-100 text-yellow-800',
+  error:   'bg-red-100 text-red-700',
+  info:    'bg-blue-100 text-blue-700',
+  purple:  'bg-purple-100 text-purple-700',
 }
 
-export function Badge({ label, variant = 'muted', className }: BadgeProps) {
+export function Badge({ children, className, variant = 'default' }: BadgeProps) {
   return (
     <span
-      className={clsx(
-        'inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap',
-        styles[variant],
+      className={cn(
+        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+        variants[variant],
         className,
       )}
     >
-      {label}
+      {children}
     </span>
   )
 }
