@@ -13,6 +13,9 @@ import {
   Activity,
   Settings,
   Bot,
+  BarChart2,
+  CreditCard,
+  ShieldCheck,
 } from 'lucide-react'
 
 const nav = [
@@ -23,6 +26,9 @@ const nav = [
   { href: '/servicos',        label: 'Serviços',       icon: Scissors        },
   { href: '/campanhas',       label: 'Campanhas',      icon: Megaphone       },
   { href: '/observabilidade', label: 'Observabilidade',icon: Activity        },
+  { href: '/analytics',       label: 'Analytics e ROI',icon: BarChart2       },
+  { href: '/billing',         label: 'Billing e Uso',  icon: CreditCard      },
+  { href: '/administracao',   label: 'Administração',  icon: ShieldCheck     },
   { href: '/configuracoes',   label: 'Configurações',  icon: Settings        },
 ]
 
