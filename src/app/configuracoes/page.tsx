@@ -1,6 +1,7 @@
-'use client'
 import { DashboardShell } from '@/components/layout/DashboardShell'
 import { Card, CardHeader } from '@/components/ui'
+
+export const dynamic = 'force-dynamic'
 
 export default function Page() {
   return (

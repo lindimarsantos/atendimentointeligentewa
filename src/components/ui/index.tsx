@@ -217,7 +217,7 @@ export function Table({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function Th({ children }: { children: React.ReactNode }) {
+export function Th({ children }: { children?: React.ReactNode }) {
   return (
     <th className="text-left text-[11px] font-medium text-[var(--color-text-2)] px-2 pb-2 border-b border-[var(--color-border)] whitespace-nowrap">
       {children}

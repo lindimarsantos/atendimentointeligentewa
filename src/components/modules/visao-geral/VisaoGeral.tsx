@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { getDashboardSummary, listConversations, listAppointments } from '@/lib/api'
 import type { DashboardSummary, Conversation, Appointment } from '@/types'
 import {
-  Card, CardHeader, MetricCard, LoadingRow, EmptyState, Badge,
+  Card, CardHeader, MetricCard, LoadingRow, EmptyState,
   Table, Th, Td, Tr, Avatar,
 } from '@/components/ui'
 import { Badge as StatusBadge } from '@/components/ui/Badge'
