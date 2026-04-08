@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sidebar-width: 220px;
+  --topbar-height: 52px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Brand */
+  --color-brand: #185FA5;
+  --color-brand-hover: #0C447C;
+
+  /* Neutral palette */
+  --color-bg:          #F7F7F5;
+  --color-surface:     #FFFFFF;
+  --color-surface-2:   #F1EFE8;
+  --color-border:      rgba(0,0,0,0.08);
+  --color-border-md:   rgba(0,0,0,0.14);
+  --color-text:        #1A1A18;
+  --color-text-2:      #5F5E5A;
+  --color-text-3:      #888780;
+
+  /* Status */
+  --color-success-bg:  #EAF3DE;
+  --color-success-fg:  #27500A;
+  --color-warning-bg:  #FAEEDA;
+  --color-warning-fg:  #633806;
+  --color-danger-bg:   #FCEBEB;
+  --color-danger-fg:   #791F1F;
+  --color-info-bg:     #E6F1FB;
+  --color-info-fg:     #0C447C;
+  --color-purple-bg:   #EEEDFE;
+  --color-purple-fg:   #3C3489;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:        #1A1A18;
+    --color-surface:   #26261F;
+    --color-surface-2: #2E2E26;
+    --color-border:    rgba(255,255,255,0.08);
+    --color-border-md: rgba(255,255,255,0.14);
+    --color-text:      #F1EFE8;
+    --color-text-2:    #B4B2A9;
+    --color-text-3:    #888780;
+
+    --color-success-bg: #173404;
+    --color-success-fg: #C0DD97;
+    --color-warning-bg: #412402;
+    --color-warning-fg: #FAC775;
+    --color-danger-bg:  #501313;
+    --color-danger-fg:  #F7C1C1;
+    --color-info-bg:    #042C53;
+    --color-info-fg:    #B5D4F4;
+    --color-purple-bg:  #26215C;
+    --color-purple-fg:  #CECBF6;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar sutil */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-md); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-3); }
+
+/* Animações */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.animate-in { animation: fadeIn .15s ease; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin .6s linear infinite; }
