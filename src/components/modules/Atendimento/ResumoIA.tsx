@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { getConversationSummary } from '@/lib/api'
 import type { ConversationSummary } from '@/types'
 import { fmtDateTime } from '@/lib/utils'
-import { Sparkles, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 
 export function ResumoIA({ conversationId }: { conversationId: string }) {
   const [summary, setSummary] = useState<ConversationSummary | null>(null)
