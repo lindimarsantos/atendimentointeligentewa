@@ -123,11 +123,19 @@ export async function getCustomer(customerId: string): Promise<Customer | null> 
 
 // ─── Appointments ────────────────────────────────────────────────────────────
 
-export async function listAppointments(date?: string): Promise<Appointment[]> {
+export async function listAppointments(dateFrom?: string, dateTo?: string): Promise<Appointment[]> {
   return rpcList('rpc_list_appointments', {
     p_tenant_id: TENANT_ID,
-    p_date_from: date ?? null,
-    p_date_to: date ?? null,
+    p_date_from: dateFrom ?? null,
+    p_date_to: dateTo ?? dateFrom ?? null,
+  })
+}
+
+export async function updateAppointmentStatus(id: string, status: string): Promise<void> {
+  await rpc('rpc_update_appointment_status', {
+    p_tenant_id: TENANT_ID,
+    p_id: id,
+    p_status: status,
   })
 }
 
