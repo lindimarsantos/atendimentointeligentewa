@@ -5,17 +5,16 @@ import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { listServices } from '@/lib/api'
 import type { Service } from '@/types'
-import { Scissors, Clock, AlertCircle } from 'lucide-react'
+import { Scissors, Clock } from 'lucide-react'
 
 export default function ServicosPage() {
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     listServices()
       .then(setServices)
-      .catch((e) => setError(e.message))
+      .catch(() => setServices([]))
       .finally(() => setLoading(false))
   }, [])
 
@@ -27,12 +26,6 @@ export default function ServicosPage() {
         <h1 className="text-xl font-semibold text-gray-900">Serviços</h1>
         <p className="text-sm text-gray-500 mt-0.5">{services.length} serviços cadastrados</p>
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 p-3 bg-red-50 rounded-lg text-sm">
-          <AlertCircle className="h-4 w-4" /> {error}
-        </div>
-      )}
 
       {loading ? (
         <div className="flex items-center justify-center h-40">

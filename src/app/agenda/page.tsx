@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { listAppointments } from '@/lib/api'
 import type { Appointment } from '@/types'
 import { fmtDate, fmtDateTime } from '@/lib/utils'
-import { CalendarCheck, AlertCircle, Clock } from 'lucide-react'
+import { CalendarCheck, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -21,13 +21,11 @@ export default function AgendaPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     setLoading(true)
     listAppointments(selectedDate)
       .then(setAppointments)
-      .catch((e) => setError(e.message))
+      .catch(() => setAppointments([]))
       .finally(() => setLoading(false))
   }, [selectedDate])
 
@@ -47,12 +45,6 @@ export default function AgendaPage() {
           className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
         />
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 p-3 bg-red-50 rounded-lg text-sm">
-          <AlertCircle className="h-4 w-4" /> {error}
-        </div>
-      )}
 
       <Card padding={false}>
         {loading ? (

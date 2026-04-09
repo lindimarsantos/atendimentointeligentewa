@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { listCustomers } from '@/lib/api'
 import type { Customer } from '@/types'
 import { fmtDateTime } from '@/lib/utils'
-import { Users, Search, ChevronRight, AlertCircle } from 'lucide-react'
+import { Users, Search, ChevronRight } from 'lucide-react'
 
 const TAG_COLORS = [
   'bg-blue-100 text-blue-700',
@@ -27,13 +27,12 @@ export default function ClientesPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   const load = useCallback((q?: string) => {
     setLoading(true)
     listCustomers(q)
       .then(setCustomers)
-      .catch((e) => setError(e.message))
+      .catch(() => setCustomers([]))
       .finally(() => setLoading(false))
   }, [])
 
@@ -65,13 +64,6 @@ export default function ClientesPage() {
           />
         </div>
       </Card>
-
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 p-4 bg-red-50 rounded-lg text-sm">
-          <AlertCircle className="h-4 w-4" />
-          {error}
-        </div>
-      )}
 
       <Card padding={false}>
         {loading ? (

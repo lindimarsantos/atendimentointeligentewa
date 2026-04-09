@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { listCampaigns, listMessageTemplates } from '@/lib/api'
 import type { Campaign, MessageTemplate } from '@/types'
 import { fmtDateTime } from '@/lib/utils'
-import { Megaphone, FileText, AlertCircle } from 'lucide-react'
+import { Megaphone, FileText } from 'lucide-react'
 import { Tabs } from '@/components/ui/Tabs'
 
 const campaignStatusMap: Record<string, { label: string; variant: 'default' | 'info' | 'success' | 'warning' | 'error' | 'purple' }> = {
@@ -28,12 +28,13 @@ export default function CampanhasPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [templates, setTemplates] = useState<MessageTemplate[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([listCampaigns(), listMessageTemplates()])
-      .then(([c, t]) => { setCampaigns(c); setTemplates(t) })
-      .catch((e) => setError(e.message))
+    Promise.allSettled([listCampaigns(), listMessageTemplates()])
+      .then(([c, t]) => {
+        if (c.status === 'fulfilled') setCampaigns(c.value)
+        if (t.status === 'fulfilled') setTemplates(t.value)
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -47,12 +48,6 @@ export default function CampanhasPage() {
       <h1 className="text-xl font-semibold text-gray-900">Campanhas e Templates</h1>
 
       <Tabs tabs={tabs} active={tab} onChange={setTab} />
-
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 p-3 bg-red-50 rounded-lg text-sm">
-          <AlertCircle className="h-4 w-4" /> {error}
-        </div>
-      )}
 
       {loading ? (
         <div className="flex items-center justify-center h-40">

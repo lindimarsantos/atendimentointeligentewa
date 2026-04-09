@@ -9,7 +9,7 @@ import type { JobEntry } from '@/types'
 import { fmtDateTime } from '@/lib/utils'
 import { Auditoria } from '@/components/modules/Observabilidade/Auditoria'
 import { IntegrationLogs } from '@/components/modules/Observabilidade/IntegrationLogs'
-import { Activity, Shield, Plug, AlertCircle } from 'lucide-react'
+import { Activity, Shield, Plug } from 'lucide-react'
 
 const jobStatusVariant: Record<string, 'default' | 'info' | 'success' | 'error' | 'warning'> = {
   pending: 'warning',
@@ -21,22 +21,15 @@ const jobStatusVariant: Record<string, 'default' | 'info' | 'success' | 'error' 
 function JobQueue() {
   const [jobs, setJobs] = useState<JobEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     listJobs()
       .then(setJobs)
-      .catch((e) => setError(e.message))
+      .catch(() => setJobs([]))
       .finally(() => setLoading(false))
   }, [])
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 p-3 bg-red-50 rounded-lg text-sm">
-          <AlertCircle className="h-4 w-4" /> {error}
-        </div>
-      )}
       <Card padding={false}>
         {loading ? (
           <div className="flex items-center justify-center h-40">

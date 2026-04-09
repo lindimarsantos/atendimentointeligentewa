@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { listConversations } from '@/lib/api'
 import type { Conversation } from '@/types'
 import { timeAgo, statusVariants } from '@/lib/utils'
-import { MessageSquare, ChevronRight, AlertCircle } from 'lucide-react'
+import { MessageSquare, ChevronRight } from 'lucide-react'
 import { Tabs } from '@/components/ui/Tabs'
 
 const statusLabel: Record<string, string> = {
@@ -30,13 +30,11 @@ export default function AtendimentoPage() {
   const [status, setStatus] = useState('')
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     setLoading(true)
     listConversations(status || undefined)
       .then(setConversations)
-      .catch((e) => setError(e.message))
+      .catch(() => setConversations([]))
       .finally(() => setLoading(false))
   }, [status])
 
@@ -50,12 +48,6 @@ export default function AtendimentoPage() {
       </div>
 
       <Tabs tabs={tabs} active={status} onChange={setStatus} />
-
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 p-3 bg-red-50 rounded-lg text-sm">
-          <AlertCircle className="h-4 w-4" /> {error}
-        </div>
-      )}
 
       <Card padding={false}>
         {loading ? (
