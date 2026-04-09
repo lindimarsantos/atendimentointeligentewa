@@ -3,11 +3,25 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
 import { listCustomers } from '@/lib/api'
 import type { Customer } from '@/types'
 import { fmtDateTime } from '@/lib/utils'
 import { Users, Search, ChevronRight, AlertCircle } from 'lucide-react'
+
+const TAG_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-purple-100 text-purple-700',
+  'bg-green-100 text-green-700',
+  'bg-yellow-100 text-yellow-700',
+  'bg-pink-100 text-pink-700',
+  'bg-orange-100 text-orange-700',
+]
+
+function tagColor(tag: string) {
+  let h = 0
+  for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) & 0xffff
+  return TAG_COLORS[h % TAG_COLORS.length]
+}
 
 export default function ClientesPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -78,7 +92,7 @@ export default function ClientesPage() {
                   className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
                       <span className="text-sm font-semibold text-brand-700">
                         {c.name.charAt(0).toUpperCase()}
                       </span>
@@ -86,10 +100,22 @@ export default function ClientesPage() {
                     <div>
                       <p className="text-sm font-medium text-gray-900">{c.name}</p>
                       <p className="text-xs text-gray-500">{c.phone}</p>
+                      {c.tags && c.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {c.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${tagColor(tag)}`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-xs text-gray-400">{fmtDateTime(c.created_at)}</span>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span className="text-xs text-gray-400 hidden sm:block">{fmtDateTime(c.created_at)}</span>
                     <ChevronRight className="h-4 w-4 text-gray-300" />
                   </div>
                 </Link>
