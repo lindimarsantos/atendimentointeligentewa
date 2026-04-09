@@ -360,7 +360,7 @@ export default function VisaoGeralPage() {
                 <XAxis dataKey="date" tickFormatter={fmtDay} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
                 <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                 <Tooltip
-                  labelFormatter={(l: string) => fmtDay(l)}
+                  labelFormatter={(l: unknown) => fmtDay(String(l))}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
