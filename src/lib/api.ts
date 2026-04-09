@@ -36,6 +36,13 @@ async function rpc<T>(name: string, params: Record<string, unknown> = {}): Promi
   return data as T
 }
 
+// json_agg() returns NULL for empty tables — always return [] instead of null
+async function rpcList<T>(name: string, params: Record<string, unknown> = {}): Promise<T[]> {
+  const { data, error } = await supabase.rpc(name, params)
+  if (error) throw error
+  return (data as T[] | null) ?? []
+}
+
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
@@ -43,24 +50,24 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 }
 
 export async function getConversationsTrend(days = 30): Promise<DailyMetric[]> {
-  return rpc('rpc_conversations_trend', { p_tenant_id: TENANT_ID, p_days: days })
+  return rpcList('rpc_conversations_trend', { p_tenant_id: TENANT_ID, p_days: days })
 }
 
 export async function getAppointmentsTrend(days = 30): Promise<DailyAppointmentMetric[]> {
-  return rpc('rpc_appointments_trend', { p_tenant_id: TENANT_ID, p_days: days })
+  return rpcList('rpc_appointments_trend', { p_tenant_id: TENANT_ID, p_days: days })
 }
 
 // ─── Conversations ───────────────────────────────────────────────────────────
 
 export async function listConversations(status?: string): Promise<Conversation[]> {
-  return rpc('rpc_list_conversations', {
+  return rpcList('rpc_list_conversations', {
     p_tenant_id: TENANT_ID,
     p_status: status ?? null,
   })
 }
 
 export async function getConversationMessages(conversationId: string): Promise<Message[]> {
-  return rpc('rpc_get_conversation_messages', {
+  return rpcList('rpc_get_conversation_messages', {
     p_tenant_id: TENANT_ID,
     p_conversation_id: conversationId,
   })
@@ -101,7 +108,7 @@ export async function encerrarConversa(conversationId: string): Promise<void> {
 // ─── Customers ───────────────────────────────────────────────────────────────
 
 export async function listCustomers(search?: string): Promise<Customer[]> {
-  return rpc('rpc_list_customers', {
+  return rpcList('rpc_list_customers', {
     p_tenant_id: TENANT_ID,
     p_search: search ?? null,
   })
@@ -117,7 +124,7 @@ export async function getCustomer(customerId: string): Promise<Customer | null> 
 // ─── Appointments ────────────────────────────────────────────────────────────
 
 export async function listAppointments(date?: string): Promise<Appointment[]> {
-  return rpc('rpc_list_appointments', {
+  return rpcList('rpc_list_appointments', {
     p_tenant_id: TENANT_ID,
     p_date_from: date ?? null,
     p_date_to: date ?? null,
@@ -149,23 +156,23 @@ export async function criarAgendamento(params: {
 // ─── Services ────────────────────────────────────────────────────────────────
 
 export async function listServices(): Promise<Service[]> {
-  return rpc('rpc_list_services', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_services', { p_tenant_id: TENANT_ID })
 }
 
 // ─── Professionals ───────────────────────────────────────────────────────────
 
 export async function listProfessionals(): Promise<Professional[]> {
-  return rpc('rpc_list_professionals', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_professionals', { p_tenant_id: TENANT_ID })
 }
 
 // ─── Campaigns / Templates ───────────────────────────────────────────────────
 
 export async function listCampaigns(): Promise<Campaign[]> {
-  return rpc('rpc_list_campaigns', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_campaigns', { p_tenant_id: TENANT_ID })
 }
 
 export async function listMessageTemplates(): Promise<MessageTemplate[]> {
-  return rpc('rpc_list_message_templates', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_message_templates', { p_tenant_id: TENANT_ID })
 }
 
 // ─── AI: Conversation Details (summaries, decisions, memories, intents) ──────
@@ -180,21 +187,21 @@ export async function getConversationSummary(
 }
 
 export async function getAiDecisions(conversationId: string): Promise<AiDecision[]> {
-  return rpc('rpc_get_ai_decisions', {
+  return rpcList('rpc_get_ai_decisions', {
     p_tenant_id: TENANT_ID,
     p_conversation_id: conversationId,
   })
 }
 
 export async function getMessageIntents(conversationId: string): Promise<MessageIntent[]> {
-  return rpc('rpc_get_message_intents', {
+  return rpcList('rpc_get_message_intents', {
     p_tenant_id: TENANT_ID,
     p_conversation_id: conversationId,
   })
 }
 
 export async function getCustomerMemories(customerId: string): Promise<CustomerMemory[]> {
-  return rpc('rpc_get_customer_memories', {
+  return rpcList('rpc_get_customer_memories', {
     p_tenant_id: TENANT_ID,
     p_customer_id: customerId,
   })
@@ -240,7 +247,7 @@ export async function updateAiAgent(data: Partial<AiAgent>): Promise<void> {
 }
 
 export async function listPromptTemplates(): Promise<PromptTemplate[]> {
-  return rpc('rpc_list_prompt_templates', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_prompt_templates', { p_tenant_id: TENANT_ID })
 }
 
 export async function upsertPromptTemplate(
@@ -257,7 +264,7 @@ export async function upsertPromptTemplate(
 }
 
 export async function getBusinessHours(): Promise<BusinessHour[]> {
-  return rpc('rpc_get_business_hours', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_get_business_hours', { p_tenant_id: TENANT_ID })
 }
 
 export async function updateBusinessHours(hours: BusinessHour[]): Promise<void> {
@@ -306,7 +313,7 @@ export async function updateTenantSettings(data: Partial<TenantSettings>): Promi
 }
 
 export async function listHandoffRules(): Promise<HandoffRule[]> {
-  return rpc('rpc_list_handoff_rules', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_handoff_rules', { p_tenant_id: TENANT_ID })
 }
 
 export async function upsertHandoffRule(data: Partial<HandoffRule>): Promise<void> {
@@ -322,7 +329,7 @@ export async function upsertHandoffRule(data: Partial<HandoffRule>): Promise<voi
 }
 
 export async function listSlaRules(): Promise<SlaRule[]> {
-  return rpc('rpc_list_sla_rules', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_sla_rules', { p_tenant_id: TENANT_ID })
 }
 
 export async function upsertSlaRule(data: Partial<SlaRule>): Promise<void> {
@@ -338,7 +345,7 @@ export async function upsertSlaRule(data: Partial<SlaRule>): Promise<void> {
 }
 
 export async function listFeatureFlags(): Promise<FeatureFlag[]> {
-  return rpc('rpc_list_feature_flags', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_feature_flags', { p_tenant_id: TENANT_ID })
 }
 
 export async function updateFeatureFlag(code: string, isEnabled: boolean, configJsonb?: Record<string, unknown>): Promise<void> {
@@ -351,7 +358,7 @@ export async function updateFeatureFlag(code: string, isEnabled: boolean, config
 }
 
 export async function listVoiceProfiles(): Promise<VoiceProfile[]> {
-  return rpc('rpc_list_voice_profiles', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_voice_profiles', { p_tenant_id: TENANT_ID })
 }
 
 export async function upsertVoiceProfile(data: Partial<VoiceProfile>): Promise<void> {
@@ -379,7 +386,7 @@ export async function listAuditLogs(params: {
   limit?: number
   offset?: number
 }): Promise<AuditLog[]> {
-  return rpc('rpc_list_audit_logs', {
+  return rpcList('rpc_list_audit_logs', {
     p_tenant_id: TENANT_ID,
     p_entity_type: params.entity_type ?? null,
     p_action: params.action ?? null,
@@ -399,7 +406,7 @@ export async function listIntegrationLogs(params: {
   limit?: number
   offset?: number
 }): Promise<IntegrationLog[]> {
-  return rpc('rpc_list_integration_logs', {
+  return rpcList('rpc_list_integration_logs', {
     p_tenant_id: TENANT_ID,
     p_integration_name: params.integration_name ?? null,
     p_status: params.status ?? null,
@@ -413,5 +420,5 @@ export async function listIntegrationLogs(params: {
 // ─── Observability ───────────────────────────────────────────────────────────
 
 export async function listJobs(): Promise<JobEntry[]> {
-  return rpc('rpc_list_jobs', { p_tenant_id: TENANT_ID })
+  return rpcList('rpc_list_jobs', { p_tenant_id: TENANT_ID })
 }
