@@ -1,6 +1,6 @@
 # Project State — Atendimento Inteligente WA
 
-> Última atualização: 2026-04-09
+> Última atualização: 2026-04-10
 
 ---
 
@@ -25,6 +25,22 @@
 - [x] `GeralTenant` — identidade, modo intake, mídia, automação
 - [x] Fix null-state: todos os tabs inicializam com defaults quando sem dados
 - [x] Migrations 001–003 aplicadas (RPCs de configuração, auditoria, trends)
+
+### Analytics e ROI
+- [x] KPIs de performance da IA (bot_resolution_rate, handoff_rate, tempos médios)
+- [x] KPIs operacionais (mensagens, resolvidas, agendamentos, clientes ativos)
+- [x] Gráfico de área — tendência de conversas (resolved, handoffs) com período 7/14/30 dias
+- [x] Gráfico de barras — agendamentos (total, realizados, cancelados)
+- [x] Progress bars — eficiência da IA e distribuição de status de conversas
+
+### Billing e Uso
+- [x] Plano atual com badge de status
+- [x] Barras de consumo por recurso (mensagens, conversas, agendamentos, jobs, clientes)
+- [x] Estatísticas operacionais em cards (mensagens, jobs, lembretes, clientes novos)
+
+### Administração
+- [x] Tab Feature Flags — lista com toggle ativo/inativo (persiste via `updateFeatureFlag`)
+- [x] Tab Tenant — visão de configurações do tenant com link para edição em /configuracoes
 
 ### Outros módulos (estrutura existe)
 - [x] Rotas criadas para: atendimento, clientes, agenda, serviços, campanhas, analytics, billing, administração, observabilidade
