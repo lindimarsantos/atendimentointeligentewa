@@ -335,7 +335,7 @@ export default function VisaoGeralPage() {
                 <XAxis dataKey="date" tickFormatter={fmtDay} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
                 <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                 <Tooltip
-                  formatter={(v: unknown, name: unknown) => [v, name]}
+                  formatter={(v: unknown, name: unknown) => [String(v), String(name)] as [string, string]}
                   labelFormatter={(l: unknown) => fmtDay(String(l))}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
                 />
