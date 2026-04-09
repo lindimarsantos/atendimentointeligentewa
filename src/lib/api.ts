@@ -159,10 +159,43 @@ export async function listServices(): Promise<Service[]> {
   return rpcList('rpc_list_services', { p_tenant_id: TENANT_ID })
 }
 
+export async function upsertService(data: Partial<Service>): Promise<void> {
+  await rpc('rpc_upsert_service', {
+    p_tenant_id:          TENANT_ID,
+    p_id:                 data.id ?? null,
+    p_name:               data.name,
+    p_description:        data.description ?? null,
+    p_duration_minutes:   data.duration_minutes,
+    p_price_min:          data.price_min ?? null,
+    p_price_max:          data.price_max ?? null,
+    p_requires_evaluation: data.requires_evaluation ?? false,
+    p_is_active:          data.is_active ?? true,
+  })
+}
+
+export async function deleteService(id: string): Promise<void> {
+  await rpc('rpc_delete_service', { p_tenant_id: TENANT_ID, p_id: id })
+}
+
 // ─── Professionals ───────────────────────────────────────────────────────────
 
 export async function listProfessionals(): Promise<Professional[]> {
   return rpcList('rpc_list_professionals', { p_tenant_id: TENANT_ID })
+}
+
+export async function upsertProfessional(data: Partial<Professional>): Promise<void> {
+  await rpc('rpc_upsert_professional', {
+    p_tenant_id: TENANT_ID,
+    p_id:        data.id ?? null,
+    p_name:      data.name,
+    p_specialty: data.specialty ?? null,
+    p_bio:       data.bio ?? null,
+    p_is_active: data.is_active ?? true,
+  })
+}
+
+export async function deleteProfessional(id: string): Promise<void> {
+  await rpc('rpc_delete_professional', { p_tenant_id: TENANT_ID, p_id: id })
 }
 
 // ─── Campaigns / Templates ───────────────────────────────────────────────────

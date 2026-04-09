@@ -1,12 +1,23 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Tabs } from '@/components/ui/Tabs'
-import { listServices, listProfessionals } from '@/lib/api'
+import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
+import { Input, Textarea } from '@/components/ui/Input'
+import { Toggle } from '@/components/ui/Toggle'
+import {
+  listServices, upsertService, deleteService,
+  listProfessionals, upsertProfessional, deleteProfessional,
+} from '@/lib/api'
 import type { Service, Professional } from '@/types'
-import { Scissors, Clock, DollarSign, Search, Users, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { toast } from '@/components/ui/Toast'
+import {
+  Scissors, Clock, DollarSign, Search, Users,
+  AlertTriangle, CheckCircle2, Plus, Edit3, Trash2,
+} from 'lucide-react'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -17,9 +28,22 @@ function fmtPrice(min?: number, max?: number): string | null {
   return fmt((min ?? max)!)
 }
 
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+function EmptyState({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+      <Icon className="h-10 w-10 mb-3" />
+      <p className="text-sm">{label}</p>
+    </div>
+  )
+}
+
 // ─── Service card ─────────────────────────────────────────────────────────────
 
-function ServiceCard({ s }: { s: Service }) {
+function ServiceCard({
+  s, onEdit, onDelete,
+}: { s: Service; onEdit: () => void; onDelete: () => void }) {
   const price = fmtPrice(s.price_min, s.price_max)
   return (
     <Card className={!s.is_active ? 'opacity-60' : ''}>
@@ -56,13 +80,24 @@ function ServiceCard({ s }: { s: Service }) {
           </span>
         )}
       </div>
+
+      <div className="flex justify-end gap-1 mt-3 pt-2 border-t border-gray-100">
+        <Button variant="ghost" size="sm" onClick={onEdit}>
+          <Edit3 className="h-3 w-3" /> Editar
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onDelete} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+          <Trash2 className="h-3 w-3" /> Excluir
+        </Button>
+      </div>
     </Card>
   )
 }
 
 // ─── Professional card ────────────────────────────────────────────────────────
 
-function ProfessionalCard({ p }: { p: Professional }) {
+function ProfessionalCard({
+  p, onEdit, onDelete,
+}: { p: Professional; onEdit: () => void; onDelete: () => void }) {
   return (
     <Card className={!p.is_active ? 'opacity-60' : ''}>
       <div className="flex items-center gap-3 mb-3">
@@ -82,68 +117,156 @@ function ProfessionalCard({ p }: { p: Professional }) {
         </Badge>
       </div>
 
-      {p.bio && (
+      {p.bio ? (
         <p className="text-xs text-gray-500 line-clamp-3 pt-2 border-t border-gray-100">
           {p.bio}
         </p>
-      )}
-
-      {!p.bio && (
+      ) : (
         <div className="flex items-center gap-1.5 text-xs text-gray-400 pt-2 border-t border-gray-100">
           <CheckCircle2 className={`h-3.5 w-3.5 ${p.is_active ? 'text-green-500' : 'text-gray-300'}`} />
           {p.is_active ? 'Disponível para agendamentos' : 'Indisponível'}
         </div>
       )}
+
+      <div className="flex justify-end gap-1 mt-3 pt-2 border-t border-gray-100">
+        <Button variant="ghost" size="sm" onClick={onEdit}>
+          <Edit3 className="h-3 w-3" /> Editar
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onDelete} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+          <Trash2 className="h-3 w-3" /> Excluir
+        </Button>
+      </div>
     </Card>
   )
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
+// ─── Default form values ──────────────────────────────────────────────────────
 
-function EmptyState({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-      <Icon className="h-10 w-10 mb-3" />
-      <p className="text-sm">{label}</p>
-    </div>
-  )
+const defaultService: Partial<Service> = {
+  name: '', description: '', duration_minutes: 30,
+  price_min: undefined, price_max: undefined,
+  requires_evaluation: false, is_active: true,
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+const defaultProfessional: Partial<Professional> = {
+  name: '', specialty: '', bio: '', is_active: true,
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 const pageTabs = [
   { id: 'services',      label: 'Serviços',      icon: Scissors },
   { id: 'professionals', label: 'Profissionais', icon: Users    },
 ]
 
-export default function ServicosPage() {
-  const [tab, setTab]                   = useState('services')
-  const [services, setServices]         = useState<Service[]>([])
-  const [professionals, setProfessionals] = useState<Professional[]>([])
-  const [loading, setLoading]           = useState(true)
-  const [search, setSearch]             = useState('')
-  const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all')
+// ─── Main page ────────────────────────────────────────────────────────────────
 
-  useEffect(() => {
+export default function ServicosPage() {
+  const [tab, setTab]                     = useState('services')
+  const [services, setServices]           = useState<Service[]>([])
+  const [professionals, setProfessionals] = useState<Professional[]>([])
+  const [loading, setLoading]             = useState(true)
+  const [search, setSearch]               = useState('')
+  const [filterActive, setFilterActive]   = useState<'all' | 'active' | 'inactive'>('all')
+
+  // Service modal
+  const [svcModal, setSvcModal]   = useState(false)
+  const [svcForm, setSvcForm]     = useState<Partial<Service>>(defaultService)
+  const [svcSaving, setSvcSaving] = useState(false)
+
+  // Professional modal
+  const [profModal, setProfModal]   = useState(false)
+  const [profForm, setProfForm]     = useState<Partial<Professional>>(defaultProfessional)
+  const [profSaving, setProfSaving] = useState(false)
+
+  const load = () => {
+    setLoading(true)
     Promise.allSettled([listServices(), listProfessionals()])
       .then(([s, p]) => {
         if (s.status === 'fulfilled') setServices(s.value)
         if (p.status === 'fulfilled') setProfessionals(p.value)
       })
       .finally(() => setLoading(false))
-  }, [])
+  }
 
-  const filteredServices = useMemo(() => {
-    return services
+  useEffect(load, [])
+
+  // ── Service CRUD ────────────────────────────────────────────────────────────
+
+  const openNewService = () => { setSvcForm(defaultService); setSvcModal(true) }
+  const openEditService = (s: Service) => { setSvcForm({ ...s }); setSvcModal(true) }
+
+  const handleSaveService = async () => {
+    if (!svcForm.name?.trim()) { toast('Nome do serviço é obrigatório', 'error'); return }
+    if (!svcForm.duration_minutes || svcForm.duration_minutes <= 0) { toast('Duração deve ser maior que zero', 'error'); return }
+    setSvcSaving(true)
+    try {
+      await upsertService(svcForm)
+      toast(svcForm.id ? 'Serviço atualizado' : 'Serviço criado')
+      setSvcModal(false)
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar serviço', 'error')
+    } finally {
+      setSvcSaving(false)
+    }
+  }
+
+  const handleDeleteService = async (s: Service) => {
+    if (!confirm(`Excluir serviço "${s.name}"?`)) return
+    try {
+      await deleteService(s.id)
+      toast('Serviço excluído')
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao excluir', 'error')
+    }
+  }
+
+  // ── Professional CRUD ───────────────────────────────────────────────────────
+
+  const openNewProfessional = () => { setProfForm(defaultProfessional); setProfModal(true) }
+  const openEditProfessional = (p: Professional) => { setProfForm({ ...p }); setProfModal(true) }
+
+  const handleSaveProfessional = async () => {
+    if (!profForm.name?.trim()) { toast('Nome do profissional é obrigatório', 'error'); return }
+    setProfSaving(true)
+    try {
+      await upsertProfessional(profForm)
+      toast(profForm.id ? 'Profissional atualizado' : 'Profissional criado')
+      setProfModal(false)
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar profissional', 'error')
+    } finally {
+      setProfSaving(false)
+    }
+  }
+
+  const handleDeleteProfessional = async (p: Professional) => {
+    if (!confirm(`Excluir profissional "${p.name}"?`)) return
+    try {
+      await deleteProfessional(p.id)
+      toast('Profissional excluído')
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao excluir', 'error')
+    }
+  }
+
+  // ── Filters ─────────────────────────────────────────────────────────────────
+
+  const filteredServices = useMemo(() =>
+    services
       .filter((s) => filterActive === 'all' || (filterActive === 'active' ? s.is_active : !s.is_active))
-      .filter((s) => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description?.toLowerCase().includes(search.toLowerCase()))
-  }, [services, search, filterActive])
+      .filter((s) => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description?.toLowerCase().includes(search.toLowerCase())),
+  [services, search, filterActive])
 
-  const filteredProfessionals = useMemo(() => {
-    return professionals
+  const filteredProfessionals = useMemo(() =>
+    professionals
       .filter((p) => filterActive === 'all' || (filterActive === 'active' ? p.is_active : !p.is_active))
-      .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.specialty?.toLowerCase().includes(search.toLowerCase()))
-  }, [professionals, search, filterActive])
+      .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.specialty?.toLowerCase().includes(search.toLowerCase())),
+  [professionals, search, filterActive])
 
   const activeServices      = services.filter((s) => s.is_active).length
   const activeProfessionals = professionals.filter((p) => p.is_active).length
@@ -159,6 +282,14 @@ export default function ServicosPage() {
             {activeProfessionals} profissional{activeProfessionals !== 1 ? 'is' : ''} ativo{activeProfessionals !== 1 ? 's' : ''}
           </p>
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={tab === 'services' ? openNewService : openNewProfessional}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          {tab === 'services' ? 'Novo serviço' : 'Novo profissional'}
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -200,7 +331,13 @@ export default function ServicosPage() {
           <EmptyState icon={Scissors} label={search ? 'Nenhum serviço encontrado' : 'Nenhum serviço cadastrado'} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredServices.map((s) => <ServiceCard key={s.id} s={s} />)}
+            {filteredServices.map((s) => (
+              <ServiceCard
+                key={s.id} s={s}
+                onEdit={() => openEditService(s)}
+                onDelete={() => handleDeleteService(s)}
+              />
+            ))}
           </div>
         )
       ) : (
@@ -208,10 +345,125 @@ export default function ServicosPage() {
           <EmptyState icon={Users} label={search ? 'Nenhum profissional encontrado' : 'Nenhum profissional cadastrado'} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredProfessionals.map((p) => <ProfessionalCard key={p.id} p={p} />)}
+            {filteredProfessionals.map((p) => (
+              <ProfessionalCard
+                key={p.id} p={p}
+                onEdit={() => openEditProfessional(p)}
+                onDelete={() => handleDeleteProfessional(p)}
+              />
+            ))}
           </div>
         )
       )}
+
+      {/* ── Service Modal ──────────────────────────────────────────────────── */}
+      <Modal
+        open={svcModal}
+        onClose={() => setSvcModal(false)}
+        title={svcForm.id ? 'Editar serviço' : 'Novo serviço'}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Nome do serviço *"
+            value={svcForm.name ?? ''}
+            onChange={(e) => setSvcForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Ex: Corte feminino"
+          />
+          <Textarea
+            label="Descrição"
+            rows={2}
+            value={svcForm.description ?? ''}
+            onChange={(e) => setSvcForm((p) => ({ ...p, description: e.target.value }))}
+            placeholder="Breve descrição do serviço..."
+          />
+          <div className="grid grid-cols-3 gap-3">
+            <Input
+              label="Duração (min) *"
+              type="number"
+              min={1}
+              value={svcForm.duration_minutes ?? ''}
+              onChange={(e) => setSvcForm((p) => ({ ...p, duration_minutes: Number(e.target.value) }))}
+              placeholder="30"
+            />
+            <Input
+              label="Preço mín. (R$)"
+              type="number"
+              min={0}
+              step={0.01}
+              value={svcForm.price_min ?? ''}
+              onChange={(e) => setSvcForm((p) => ({ ...p, price_min: e.target.value ? Number(e.target.value) : undefined }))}
+              placeholder="50"
+            />
+            <Input
+              label="Preço máx. (R$)"
+              type="number"
+              min={0}
+              step={0.01}
+              value={svcForm.price_max ?? ''}
+              onChange={(e) => setSvcForm((p) => ({ ...p, price_max: e.target.value ? Number(e.target.value) : undefined }))}
+              placeholder="100"
+            />
+          </div>
+          <div className="flex flex-col gap-3">
+            <Toggle
+              checked={svcForm.requires_evaluation ?? false}
+              onChange={(v) => setSvcForm((p) => ({ ...p, requires_evaluation: v }))}
+              label="Requer avaliação prévia"
+            />
+            <Toggle
+              checked={svcForm.is_active ?? true}
+              onChange={(v) => setSvcForm((p) => ({ ...p, is_active: v }))}
+              label="Serviço ativo"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setSvcModal(false)}>Cancelar</Button>
+            <Button onClick={handleSaveService} loading={svcSaving}>
+              {svcForm.id ? 'Salvar alterações' : 'Criar serviço'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Professional Modal ─────────────────────────────────────────────── */}
+      <Modal
+        open={profModal}
+        onClose={() => setProfModal(false)}
+        title={profForm.id ? 'Editar profissional' : 'Novo profissional'}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Nome *"
+            value={profForm.name ?? ''}
+            onChange={(e) => setProfForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Ex: Ana Lima"
+          />
+          <Input
+            label="Especialidade"
+            value={profForm.specialty ?? ''}
+            onChange={(e) => setProfForm((p) => ({ ...p, specialty: e.target.value }))}
+            placeholder="Ex: Colorimetria"
+          />
+          <Textarea
+            label="Bio"
+            rows={3}
+            value={profForm.bio ?? ''}
+            onChange={(e) => setProfForm((p) => ({ ...p, bio: e.target.value }))}
+            placeholder="Apresentação do profissional..."
+          />
+          <Toggle
+            checked={profForm.is_active ?? true}
+            onChange={(v) => setProfForm((p) => ({ ...p, is_active: v }))}
+            label="Profissional ativo"
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setProfModal(false)}>Cancelar</Button>
+            <Button onClick={handleSaveProfessional} loading={profSaving}>
+              {profForm.id ? 'Salvar alterações' : 'Criar profissional'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
