@@ -8,7 +8,19 @@ import { Card } from '@/components/ui/Card'
 import { getChannelSettings, updateChannelSettings } from '@/lib/api'
 import type { ChannelSettings } from '@/types'
 import { toast } from '@/components/ui/Toast'
-import { AlertCircle, MessageSquare } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+
+const DEFAULT_CHANNEL: ChannelSettings = {
+  id: '',
+  tenant_id: '',
+  channel_id: '',
+  welcome_message: '',
+  out_of_hours_message: '',
+  handoff_message: '',
+  buffer_active: true,
+  typing_simulation: true,
+  updated_at: '',
+}
 
 export function MensagensCanal() {
   const [data, setData] = useState<ChannelSettings | null>(null)
@@ -18,7 +30,7 @@ export function MensagensCanal() {
 
   useEffect(() => {
     getChannelSettings()
-      .then(setData)
+      .then((d) => setData(d ?? DEFAULT_CHANNEL))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
@@ -53,8 +65,7 @@ export function MensagensCanal() {
       </div>
     )
 
-  if (!data)
-    return <p className="text-sm text-gray-400 text-center py-8">Canal não configurado</p>
+  if (!data) return null
 
   return (
     <div className="space-y-6 max-w-2xl">

@@ -11,8 +11,20 @@ import { Modal } from '@/components/ui/Modal'
 import { getAiAgent, updateAiAgent, listPromptTemplates, upsertPromptTemplate } from '@/lib/api'
 import type { AiAgent, PromptTemplate } from '@/types'
 import { toast } from '@/components/ui/Toast'
-import { AlertCircle, FileText, Plus, Edit3, Eye } from 'lucide-react'
+import { AlertCircle, Plus, Edit3, Eye } from 'lucide-react'
 import { fmtDateTime } from '@/lib/utils'
+
+const DEFAULT_AGENT: AiAgent = {
+  id: '',
+  tenant_id: '',
+  name: 'Agente Principal',
+  status: 'active',
+  model_name: 'claude-sonnet-4-20250514',
+  system_prompt: '',
+  temperature: 0.7,
+  max_tokens: 2048,
+  updated_at: '',
+}
 
 // Highlight {{variables}} in text
 function PromptPreview({ text }: { text: string }) {
@@ -48,7 +60,7 @@ export function PromptModelo() {
 
   useEffect(() => {
     Promise.all([getAiAgent(), listPromptTemplates()])
-      .then(([a, t]) => { setAgent(a); setTemplates(t) })
+      .then(([a, t]) => { setAgent(a ?? DEFAULT_AGENT); setTemplates(t) })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
@@ -192,8 +204,8 @@ export function PromptModelo() {
               spellCheck={false}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Use <code className="bg-gray-100 px-1 rounded">{'{{variavel}}'}</code> para
-              inserir dados dinâmicos (ex: <code className="bg-gray-100 px-1 rounded">{'{{cliente_nome}}'}</code>)
+              Use <code className="bg-gray-100 px-1 rounded">{'{{'+'variavel'+'}}'}</code> para
+              inserir dados dinâmicos (ex: <code className="bg-gray-100 px-1 rounded">{'{{'+'cliente_nome'+'}}'}</code>)
             </p>
           </div>
 

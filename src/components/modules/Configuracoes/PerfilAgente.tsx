@@ -9,7 +9,22 @@ import { Toggle } from '@/components/ui/Toggle'
 import { getAiAgentProfile, updateAiAgentProfile } from '@/lib/api'
 import type { AiAgentProfile } from '@/types'
 import { toast } from '@/components/ui/Toast'
-import { AlertCircle, User } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+
+const DEFAULT_PROFILE: AiAgentProfile = {
+  id: '',
+  tenant_id: '',
+  profile_name: 'Agente',
+  objective: '',
+  tone: 'profissional',
+  verbosity: 'moderado',
+  escalation_policy: '',
+  use_memory: true,
+  use_recommendations: true,
+  use_scheduling: true,
+  allow_voice_response: false,
+  updated_at: '',
+}
 
 export function PerfilAgente() {
   const [data, setData] = useState<AiAgentProfile | null>(null)
@@ -19,7 +34,7 @@ export function PerfilAgente() {
 
   useEffect(() => {
     getAiAgentProfile()
-      .then(setData)
+      .then((d) => setData(d ?? DEFAULT_PROFILE))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
@@ -54,8 +69,7 @@ export function PerfilAgente() {
       </div>
     )
 
-  if (!data)
-    return <p className="text-sm text-gray-400 text-center py-8">Nenhum perfil encontrado</p>
+  if (!data) return null
 
   return (
     <div className="space-y-6 max-w-2xl">

@@ -24,6 +24,21 @@ const TIMEZONES = [
   'America/Rio_Branco',
 ].map((tz) => ({ value: tz, label: tz.replace('America/', '').replace('_', ' ') }))
 
+const DEFAULT_TENANT: TenantSettings = {
+  id: '',
+  tenant_id: '',
+  business_name: '',
+  timezone: 'America/Sao_Paulo',
+  language: 'pt-BR',
+  intake_mode: 'bot_first',
+  allow_audio: true,
+  allow_image: true,
+  allow_voice: false,
+  human_approval_high_risk: true,
+  auto_create_customer: true,
+  updated_at: '',
+}
+
 export function GeralTenant() {
   const [data, setData] = useState<TenantSettings | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,7 +47,7 @@ export function GeralTenant() {
 
   useEffect(() => {
     getTenantSettings()
-      .then(setData)
+      .then((d) => setData(d ?? DEFAULT_TENANT))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
@@ -67,8 +82,7 @@ export function GeralTenant() {
       </div>
     )
 
-  if (!data)
-    return <p className="text-sm text-gray-400 text-center py-8">Configurações não encontradas</p>
+  if (!data) return null
 
   return (
     <div className="space-y-6 max-w-2xl">
