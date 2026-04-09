@@ -15,12 +15,16 @@ export function DadosNegocio() {
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [hours, setHours] = useState<BusinessHour[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [hoursError, setHoursError] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([listServices(), listProfessionals(), getBusinessHours()])
-      .then(([s, p, h]) => { setServices(s); setProfessionals(p); setHours(h) })
-      .catch((e) => setError(e.message))
+    Promise.allSettled([listServices(), listProfessionals(), getBusinessHours()])
+      .then(([s, p, h]) => {
+        if (s.status === 'fulfilled') setServices(s.value)
+        if (p.status === 'fulfilled') setProfessionals(p.value)
+        if (h.status === 'fulfilled') setHours(h.value)
+        else setHoursError((h as PromiseRejectedResult).reason?.message ?? 'Erro ao carregar horários')
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -39,12 +43,6 @@ export function DadosNegocio() {
         Estes dados são lidos pela IA para contextualizar o atendimento. Edite-os nos módulos
         correspondentes (Serviços, Agenda).
       </p>
-
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 p-3 bg-red-50 rounded-lg text-sm">
-          <AlertCircle className="h-4 w-4" /> {error}
-        </div>
-      )}
 
       {/* Services */}
       <Card>
@@ -132,7 +130,12 @@ export function DadosNegocio() {
             </span>
           </CardTitle>
         </CardHeader>
-        {sortedHours.length === 0 ? (
+        {hoursError ? (
+          <div className="flex items-center gap-2 text-amber-700 p-3 bg-amber-50 rounded-lg text-sm">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            Horários indisponíveis — configure via módulo Agenda.
+          </div>
+        ) : sortedHours.length === 0 ? (
           <p className="text-sm text-gray-400">Horários não configurados</p>
         ) : (
           <ul className="space-y-1">
