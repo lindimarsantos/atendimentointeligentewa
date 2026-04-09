@@ -34,9 +34,13 @@
 ## 📋 Backlog (próximas sessões)
 
 ### Dashboard (Visão Geral)
-- [ ] Métricas principais (RPCs já existem: `rpc_dashboard_summary`, `rpc_conversations_trend`)
-- [ ] Gráficos de volume
-- [ ] Alertas ativos
+- [x] 6 KPIs (clientes, conversas, handoff, resolvidas, agendamentos, taxa IA)
+- [x] Gráfico de área — tendência de conversas (7/14/30 dias)
+- [x] Gráfico de barras — agendamentos por dia
+- [x] Donuts — distribuição de status + eficiência da IA
+- [x] Métricas operacionais (mensagens, jobs, lembretes)
+- [x] Listas recentes: conversas + agendamentos
+- [x] Alerta banner para conversas aguardando humano
 
 ### Atendimento
 - [ ] Lista de conversas ativas (`rpc_list_conversations`)
