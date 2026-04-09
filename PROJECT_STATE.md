@@ -43,18 +43,19 @@
 - [x] Alerta banner para conversas aguardando humano
 
 ### Atendimento
-- [ ] Lista de conversas ativas (`rpc_list_conversations`)
-- [ ] Interface de chat (`rpc_get_conversation_messages`)
-- [ ] Ações: assumir, encerrar, registrar nota
+- [x] Lista com filtro por status (5 tabs)
+- [x] Interface de chat (bolhas inbound/outbound + badges de intenção)
+- [x] Ações: assumir, encerrar, registrar nota
+- [x] Painel lateral: Resumo IA, Memórias do cliente, Timeline de decisões
 
 ### Clientes
-- [ ] Lista + busca (`rpc_list_customers`)
-- [ ] Perfil do cliente com memórias e histórico
+- [x] Lista com busca e tags coloridas
+- [x] Perfil com dados, memórias da IA, histórico de conversas e agendamentos
 
 ### Observabilidade
-- [ ] Audit logs (`rpc_list_audit_logs`)
-- [ ] Integration logs
-- [ ] Jobs monitor
+- [x] Job Queue — fila com status, tipo, erro, data
+- [x] Auditoria — logs de auditoria
+- [x] Integrações — integration logs
 
 ### Configurações — melhorias futuras
 - [ ] Tab `DadosNegócio`: permitir edição de horários via `rpc_update_business_hours`
