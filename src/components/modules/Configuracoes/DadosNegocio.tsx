@@ -14,6 +14,7 @@ import { toast } from '@/components/ui/Toast'
 import {
   ExternalLink, Scissors, Users, Clock, AlertCircle,
   MapPin, Phone, Globe, Mail, Instagram, Facebook, MessageCircle,
+  Linkedin, Music2, Star,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -96,6 +97,26 @@ function ContactForm({ initial, onSaved }: {
           placeholder="@clinica ou URL completa"
           {...field('facebook')}
         />
+        <Input
+          label="TikTok"
+          placeholder="@clinica ou URL completa"
+          {...field('tiktok')}
+        />
+        <Input
+          label="LinkedIn"
+          placeholder="URL do perfil ou página"
+          {...field('linkedin')}
+        />
+        <Input
+          label="Link de Avaliação Google"
+          placeholder="https://g.page/r/..."
+          {...field('google_review_url')}
+        />
+        <Input
+          label="Horário de funcionamento"
+          placeholder="Seg–Sex: 9h–18h · Sáb: 9h–13h · Dom: Fechado"
+          {...field('business_hours')}
+        />
       </div>
 
       <div className="flex items-center justify-between pt-1">
@@ -121,14 +142,18 @@ function ContactDisplay({
   onEdit: () => void
 }) {
   const rows: { icon: React.ElementType; label: string; value: string; href?: string }[] = [
-    { icon: MapPin,         label: 'Endereço',   value: contact.address ?? '—' },
-    { icon: MapPin,         label: 'Google Maps', value: contact.google_maps_url ? 'Ver mapa' : '—', href: contact.google_maps_url },
-    { icon: Phone,          label: 'Telefone',   value: contact.phone ?? '—' },
-    { icon: MessageCircle,  label: 'WhatsApp',   value: contact.whatsapp ?? '—' },
-    { icon: Globe,          label: 'Site',       value: contact.website ? 'Abrir site' : '—', href: contact.website },
-    { icon: Mail,           label: 'E-mail',     value: contact.email ?? '—' },
-    { icon: Instagram,      label: 'Instagram',  value: contact.instagram ?? '—' },
-    { icon: Facebook,       label: 'Facebook',   value: contact.facebook ?? '—' },
+    { icon: MapPin,         label: 'Endereço',          value: contact.address ?? '—' },
+    { icon: MapPin,         label: 'Google Maps',        value: contact.google_maps_url ? 'Ver mapa' : '—', href: contact.google_maps_url },
+    { icon: Phone,          label: 'Telefone',           value: contact.phone ?? '—' },
+    { icon: MessageCircle,  label: 'WhatsApp',           value: contact.whatsapp ?? '—' },
+    { icon: Globe,          label: 'Site',               value: contact.website ? 'Abrir site' : '—', href: contact.website },
+    { icon: Mail,           label: 'E-mail',             value: contact.email ?? '—' },
+    { icon: Instagram,      label: 'Instagram',          value: contact.instagram ?? '—' },
+    { icon: Facebook,       label: 'Facebook',           value: contact.facebook ?? '—' },
+    { icon: Music2,         label: 'TikTok',             value: contact.tiktok ?? '—' },
+    { icon: Linkedin,       label: 'LinkedIn',           value: contact.linkedin ? 'Ver perfil' : '—', href: contact.linkedin },
+    { icon: Star,           label: 'Avaliação Google',   value: contact.google_review_url ? 'Avaliar no Google' : '—', href: contact.google_review_url },
+    { icon: Clock,          label: 'Horário de funcionamento', value: contact.business_hours ?? '—' },
   ].filter((r) => r.value !== '—')
 
   if (rows.length === 0) {

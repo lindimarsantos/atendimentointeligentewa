@@ -340,14 +340,18 @@ export interface ChannelSettings {
 // ─── Business Contact Info ────────────────────────────────────────────────────
 
 export interface BusinessContact {
-  address?:        string
-  google_maps_url?: string
-  phone?:          string
-  whatsapp?:       string
-  website?:        string
-  email?:          string
-  instagram?:      string
-  facebook?:       string
+  address?:          string
+  google_maps_url?:  string
+  phone?:            string
+  whatsapp?:         string
+  website?:          string
+  email?:            string
+  instagram?:        string
+  facebook?:         string
+  tiktok?:           string
+  linkedin?:         string
+  google_review_url?: string
+  business_hours?:   string
 }
 
 // ─── Tenant membership (for switcher) ────────────────────────────────────────
