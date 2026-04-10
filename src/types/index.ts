@@ -337,6 +337,28 @@ export interface ChannelSettings {
   updated_at: string
 }
 
+// ─── Business Contact Info ────────────────────────────────────────────────────
+
+export interface BusinessContact {
+  address?:        string
+  google_maps_url?: string
+  phone?:          string
+  whatsapp?:       string
+  website?:        string
+  email?:          string
+  instagram?:      string
+  facebook?:       string
+}
+
+// ─── Tenant membership (for switcher) ────────────────────────────────────────
+
+export interface UserTenantMembership {
+  tenant_id:    string
+  role:         string
+  tenant_name:  string
+  display_name: string
+}
+
 // ─── Tenant (super-admin) ─────────────────────────────────────────────────────
 
 export interface Tenant {

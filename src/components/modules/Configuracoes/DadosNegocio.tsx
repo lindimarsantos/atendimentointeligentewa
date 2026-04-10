@@ -3,29 +3,201 @@
 import { useEffect, useState } from 'react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { listServices, listProfessionals, getBusinessHours } from '@/lib/api'
-import type { Service, Professional, BusinessHour } from '@/types'
-import { ExternalLink, Scissors, Users, Clock, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import {
+  listServices, listProfessionals, getBusinessHours,
+  getBusinessContact, updateBusinessContact,
+} from '@/lib/api'
+import type { Service, Professional, BusinessHour, BusinessContact } from '@/types'
+import { toast } from '@/components/ui/Toast'
+import {
+  ExternalLink, Scissors, Users, Clock, AlertCircle,
+  MapPin, Phone, Globe, Mail, Instagram, Facebook, MessageCircle,
+} from 'lucide-react'
 import Link from 'next/link'
 
 const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
+// ─── Contact form ─────────────────────────────────────────────────────────────
+
+function ContactForm({ initial, onSaved }: {
+  initial: BusinessContact
+  onSaved: (c: BusinessContact) => void
+}) {
+  const [form, setForm] = useState<BusinessContact>(initial)
+  const [saving, setSaving] = useState(false)
+
+  function field(key: keyof BusinessContact) {
+    return {
+      value: form[key] ?? '',
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+        setForm((p) => ({ ...p, [key]: e.target.value || undefined })),
+    }
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      // Remove empty strings before saving
+      const clean = Object.fromEntries(
+        Object.entries(form).filter(([, v]) => v && String(v).trim()),
+      ) as BusinessContact
+      await updateBusinessContact(clean)
+      onSaved(clean)
+      toast('Dados de contato salvos')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Input
+          label="Endereço completo"
+          placeholder="Rua, nº, bairro, cidade – UF"
+          {...field('address')}
+        />
+        <Input
+          label="Link do Google Maps"
+          placeholder="https://maps.google.com/..."
+          {...field('google_maps_url')}
+        />
+        <Input
+          label="Telefone / Ligações"
+          placeholder="(11) 3333-4444"
+          {...field('phone')}
+        />
+        <Input
+          label="WhatsApp"
+          placeholder="(11) 99999-8888"
+          {...field('whatsapp')}
+        />
+        <Input
+          label="Site"
+          placeholder="https://www.clinica.com.br"
+          {...field('website')}
+        />
+        <Input
+          label="E-mail"
+          placeholder="contato@clinica.com.br"
+          {...field('email')}
+        />
+        <Input
+          label="Instagram"
+          placeholder="@clinica ou URL completa"
+          {...field('instagram')}
+        />
+        <Input
+          label="Facebook"
+          placeholder="@clinica ou URL completa"
+          {...field('facebook')}
+        />
+      </div>
+
+      <div className="flex items-center justify-between pt-1">
+        <p className="text-xs text-gray-500">
+          Estes dados ficam disponíveis para a IA via{' '}
+          <code className="bg-gray-100 px-1 rounded text-gray-600">{'{{negocio_telefone}}'}</code>{' '}
+          e demais variáveis do grupo <strong>Negócio</strong>.
+        </p>
+        <Button onClick={save} loading={saving} size="sm">
+          Salvar
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Contact display (read-only preview) ─────────────────────────────────────
+
+function ContactDisplay({
+  contact, onEdit,
+}: {
+  contact: BusinessContact
+  onEdit: () => void
+}) {
+  const rows: { icon: React.ElementType; label: string; value: string; href?: string }[] = [
+    { icon: MapPin,         label: 'Endereço',   value: contact.address ?? '—' },
+    { icon: MapPin,         label: 'Google Maps', value: contact.google_maps_url ? 'Ver mapa' : '—', href: contact.google_maps_url },
+    { icon: Phone,          label: 'Telefone',   value: contact.phone ?? '—' },
+    { icon: MessageCircle,  label: 'WhatsApp',   value: contact.whatsapp ?? '—' },
+    { icon: Globe,          label: 'Site',       value: contact.website ? 'Abrir site' : '—', href: contact.website },
+    { icon: Mail,           label: 'E-mail',     value: contact.email ?? '—' },
+    { icon: Instagram,      label: 'Instagram',  value: contact.instagram ?? '—' },
+    { icon: Facebook,       label: 'Facebook',   value: contact.facebook ?? '—' },
+  ].filter((r) => r.value !== '—')
+
+  if (rows.length === 0) {
+    return (
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-400">Nenhum dado de contato cadastrado</p>
+        <Button variant="secondary" size="sm" onClick={onEdit}>Preencher</Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2.5">
+      {rows.map(({ icon: Icon, label, value, href }) => (
+        <div key={label} className="flex items-start gap-2.5">
+          <Icon className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500">{label}</p>
+            {href ? (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-brand-600 hover:underline"
+              >
+                {value}
+              </a>
+            ) : (
+              <p className="text-sm text-gray-900">{value}</p>
+            )}
+          </div>
+        </div>
+      ))}
+      <div className="flex justify-end pt-1 border-t border-gray-100">
+        <Button variant="secondary" size="sm" onClick={onEdit}>Editar</Button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export function DadosNegocio() {
-  const [services, setServices] = useState<Service[]>([])
+  const [services,      setServices]      = useState<Service[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
-  const [hours, setHours] = useState<BusinessHour[]>([])
-  const [loading, setLoading] = useState(true)
-  const [hoursError, setHoursError] = useState<string | null>(null)
+  const [hours,         setHours]         = useState<BusinessHour[]>([])
+  const [contact,       setContact]       = useState<BusinessContact>({})
+  const [loading,       setLoading]       = useState(true)
+  const [hoursError,    setHoursError]    = useState<string | null>(null)
+  const [editingContact, setEditingContact] = useState(false)
 
   useEffect(() => {
-    Promise.allSettled([listServices(), listProfessionals(), getBusinessHours()])
-      .then(([s, p, h]) => {
-        if (s.status === 'fulfilled') setServices(s.value)
-        if (p.status === 'fulfilled') setProfessionals(p.value)
-        if (h.status === 'fulfilled') setHours(h.value)
-        else setHoursError((h as PromiseRejectedResult).reason?.message ?? 'Erro ao carregar horários')
-      })
-      .finally(() => setLoading(false))
+    Promise.allSettled([
+      listServices(),
+      listProfessionals(),
+      getBusinessHours(),
+      getBusinessContact(),
+    ]).then(([s, p, h, c]) => {
+      if (s.status === 'fulfilled') setServices(s.value)
+      if (p.status === 'fulfilled') setProfessionals(p.value)
+      if (h.status === 'fulfilled') setHours(h.value)
+      else setHoursError((h as PromiseRejectedResult).reason?.message ?? 'Erro ao carregar horários')
+      if (c.status === 'fulfilled') {
+        setContact(c.value)
+        // Auto-open form if no contact data yet
+        const hasData = Object.values(c.value).some((v) => v && String(v).trim())
+        if (!hasData) setEditingContact(true)
+      }
+    }).finally(() => setLoading(false))
   }, [])
 
   const sortedHours = [...hours].sort((a, b) => a.day_of_week - b.day_of_week)
@@ -40,9 +212,36 @@ export function DadosNegocio() {
   return (
     <div className="space-y-6 max-w-3xl">
       <p className="text-sm text-gray-500 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-        Estes dados são lidos pela IA para contextualizar o atendimento. Edite-os nos módulos
-        correspondentes (Serviços, Agenda).
+        Estes dados são usados pela IA para contextualizar o atendimento. Mantenha-os atualizados.
       </p>
+
+      {/* Contact info */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <span className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-brand-500" />
+              Contato e Localização
+            </span>
+          </CardTitle>
+          {!editingContact && (
+            <button
+              onClick={() => setEditingContact(true)}
+              className="text-xs text-brand-600 hover:underline"
+            >
+              Editar
+            </button>
+          )}
+        </CardHeader>
+        {editingContact ? (
+          <ContactForm
+            initial={contact}
+            onSaved={(c) => { setContact(c); setEditingContact(false) }}
+          />
+        ) : (
+          <ContactDisplay contact={contact} onEdit={() => setEditingContact(true)} />
+        )}
+      </Card>
 
       {/* Services */}
       <Card>

@@ -18,6 +18,9 @@ import {
   CreditCard,
   ShieldCheck,
   LogOut,
+  ChevronsUpDown,
+  Check,
+  Building2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -37,10 +40,11 @@ const nav = [
 ]
 
 export function Sidebar() {
-  const pathname = usePathname()
-  const router   = useRouter()
-  const { user, role, signOut } = useAuth()
-  const [signingOut, setSigningOut] = useState(false)
+  const pathname  = usePathname()
+  const router    = useRouter()
+  const { user, role, signOut, tenantId, tenantName, tenants, switchTenant } = useAuth()
+  const [signingOut, setSigningOut]         = useState(false)
+  const [tenantMenuOpen, setTenantMenuOpen] = useState(false)
 
   async function handleSignOut() {
     setSigningOut(true)
@@ -55,8 +59,8 @@ export function Sidebar() {
     <aside className="fixed inset-y-0 left-0 w-60 bg-white border-r border-gray-200 flex flex-col z-30">
 
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-5 h-16 border-b border-gray-100">
-        <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
+      <div className="flex items-center gap-2.5 px-5 h-14 border-b border-gray-100 shrink-0">
+        <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center shrink-0">
           <Bot className="h-5 w-5 text-white" />
         </div>
         <div>
@@ -65,8 +69,66 @@ export function Sidebar() {
         </div>
       </div>
 
+      {/* Active tenant indicator */}
+      <div className="px-3 py-2 border-b border-gray-100 shrink-0 relative">
+        <button
+          onClick={() => tenants.length > 1 && setTenantMenuOpen((o) => !o)}
+          className={cn(
+            'w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors',
+            tenants.length > 1
+              ? 'hover:bg-gray-50 cursor-pointer'
+              : 'cursor-default',
+          )}
+        >
+          <div className="w-7 h-7 rounded-md bg-brand-50 flex items-center justify-center shrink-0">
+            <Building2 className="h-3.5 w-3.5 text-brand-600" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-gray-800 truncate leading-tight">
+              {tenantName ?? 'Carregando…'}
+            </p>
+            <p className="text-xs text-gray-400 leading-tight">tenant ativo</p>
+          </div>
+          {tenants.length > 1 && (
+            <ChevronsUpDown className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+          )}
+        </button>
+
+        {/* Tenant dropdown */}
+        {tenantMenuOpen && tenants.length > 1 && (
+          <div className="absolute left-3 right-3 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+            <p className="px-3 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wide">
+              Trocar tenant
+            </p>
+            {tenants.map((t) => (
+              <button
+                key={t.tenant_id}
+                onClick={() => {
+                  setTenantMenuOpen(false)
+                  switchTenant(t.tenant_id)
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
+              >
+                <div className="w-6 h-6 rounded-md bg-brand-100 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-brand-700">
+                    {t.display_name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 truncate">{t.display_name}</p>
+                  <p className="text-xs text-gray-400 capitalize">{t.role}</p>
+                </div>
+                {t.tenant_id === tenantId && (
+                  <Check className="h-3.5 w-3.5 text-brand-600 shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Nav */}
-      <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
         {nav.map(({ href, label, icon: Icon }) => {
           const active =
             href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -74,6 +136,7 @@ export function Sidebar() {
             <Link
               key={href}
               href={href}
+              onClick={() => setTenantMenuOpen(false)}
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                 active
@@ -89,7 +152,7 @@ export function Sidebar() {
       </nav>
 
       {/* Footer: user info + logout */}
-      <div className="px-3 py-3 border-t border-gray-100 space-y-2">
+      <div className="px-3 py-3 border-t border-gray-100 space-y-2 shrink-0">
 
         {/* User info */}
         {user && (

@@ -39,6 +39,8 @@ import type {
   JobEntry,
   PredictionScore,
   RoiSummary,
+  BusinessContact,
+  UserTenantMembership,
 } from '@/types'
 
 async function rpc<T>(name: string, params: Record<string, unknown> = {}): Promise<T> {
@@ -567,6 +569,30 @@ export async function listPredictionScores(params: {
 
 export async function getRoiSummary(months = 6): Promise<RoiSummary> {
   return rpc('rpc_get_roi_summary', { p_tenant_id: getTenantId(), p_months: months })
+}
+
+// ─── Business Contact Info ───────────────────────────────────────────────────
+
+export async function getBusinessContact(): Promise<BusinessContact> {
+  const data = await rpc<BusinessContact | null>('rpc_get_business_contact', {
+    p_tenant_id: getTenantId(),
+  })
+  return data ?? {}
+}
+
+export async function updateBusinessContact(contact: BusinessContact): Promise<void> {
+  await rpc('rpc_update_business_contact', {
+    p_tenant_id: getTenantId(),
+    p_contact:   contact,
+  })
+}
+
+// ─── Tenant: user memberships (for tenant switcher) ──────────────────────────
+
+export async function listUserTenants(userId: string): Promise<UserTenantMembership[]> {
+  const { data, error } = await supabase.rpc('rpc_list_user_tenants', { p_user_id: userId })
+  if (error) throw error
+  return (data as UserTenantMembership[] | null) ?? []
 }
 
 // ─── Super-admin: Tenant management ──────────────────────────────────────────
