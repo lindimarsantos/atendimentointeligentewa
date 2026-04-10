@@ -30,12 +30,16 @@ const STATUS_CONV: Record<string, string> = {
 }
 
 export default function AgentesPage() {
-  const [agent,   setAgent]   = useState<AiAgent | null>(null)
-  const [profile, setProfile] = useState<AiAgentProfile | null>(null)
+  const [agent,    setAgent]    = useState<AiAgent | null>(null)
+  const [profile,  setProfile]  = useState<AiAgentProfile | null>(null)
   const [botConvs, setBotConvs] = useState<Conversation[]>([])
   const [summary,  setSummary]  = useState<DashboardSummary | null>(null)
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState<string | null>(null)
+
+  // Safe accessors — guards against sub-objects being null at runtime
+  const convStats = summary?.conversations  ?? null
+  const perfStats = summary?.performance    ?? null
 
   const load = useCallback(() => {
     setLoading(true)
@@ -182,7 +186,7 @@ export default function AgentesPage() {
               <span className="text-xs text-gray-500">Resolvidas</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {summary?.conversations.resolved ?? '—'}
+              {convStats?.resolved ?? '—'}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">total do período</p>
           </Card>
@@ -195,8 +199,8 @@ export default function AgentesPage() {
               <span className="text-xs text-gray-500">Taxa IA</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {summary?.performance.bot_resolution_rate != null
-                ? `${(summary.performance.bot_resolution_rate * 100).toFixed(0)}%`
+              {perfStats?.bot_resolution_rate != null
+                ? `${(perfStats.bot_resolution_rate * 100).toFixed(0)}%`
                 : '—'}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">resolução sem humano</p>
@@ -210,7 +214,7 @@ export default function AgentesPage() {
               <span className="text-xs text-gray-500">Aguardando</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {summary?.conversations.waiting_human ?? '—'}
+              {convStats?.waiting_human ?? '—'}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">handoff pendente</p>
           </Card>
