@@ -182,7 +182,7 @@ export default function AgentesPage() {
               <span className="text-xs text-gray-500">Resolvidas</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {summary?.resolved_conversations ?? '—'}
+              {summary?.conversations.resolved ?? '—'}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">total do período</p>
           </Card>
@@ -195,8 +195,8 @@ export default function AgentesPage() {
               <span className="text-xs text-gray-500">Taxa IA</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {summary?.bot_resolution_rate != null
-                ? `${(summary.bot_resolution_rate * 100).toFixed(0)}%`
+              {summary?.performance.bot_resolution_rate != null
+                ? `${(summary.performance.bot_resolution_rate * 100).toFixed(0)}%`
                 : '—'}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">resolução sem humano</p>
@@ -210,7 +210,7 @@ export default function AgentesPage() {
               <span className="text-xs text-gray-500">Aguardando</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {summary?.waiting_human_count ?? '—'}
+              {summary?.conversations.waiting_human ?? '—'}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">handoff pendente</p>
           </Card>

@@ -176,7 +176,7 @@ function HandoffCard({
 
           {entry.last_message && (
             <p className="text-xs text-gray-400 italic truncate mb-1.5">
-              "{entry.last_message}"
+              &ldquo;{entry.last_message}&rdquo;
             </p>
           )}
 
