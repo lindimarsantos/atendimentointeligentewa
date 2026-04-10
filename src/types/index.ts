@@ -297,6 +297,21 @@ export interface ChannelSettings {
   updated_at: string
 }
 
+// ─── Tenant (super-admin) ─────────────────────────────────────────────────────
+
+export interface Tenant {
+  id: string
+  name: string
+  slug: string
+  status: 'active' | 'trial' | 'suspended' | 'cancelled'
+  plan?: string
+  timezone: string
+  locale: string
+  member_count?: number
+  created_at: string
+  updated_at?: string
+}
+
 // ─── Config: Tenant Settings ─────────────────────────────────────────────────
 
 export interface TenantSettings {

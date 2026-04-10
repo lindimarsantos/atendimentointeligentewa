@@ -27,6 +27,7 @@ import type {
   BusinessHour,
   ChannelSettings,
   TenantSettings,
+  Tenant,
   HandoffRule,
   SlaRule,
   FeatureFlag,
@@ -468,6 +469,31 @@ export async function upsertVoiceProfile(data: Partial<VoiceProfile>): Promise<v
     p_settings_jsonb: data.settings_jsonb ?? null,
     p_is_default: data.is_default ?? false,
   })
+}
+
+// ─── Super-admin: Tenant management ──────────────────────────────────────────
+
+export async function listAllTenants(): Promise<Tenant[]> {
+  const { data, error } = await supabase.rpc('rpc_list_all_tenants')
+  if (error) throw error
+  return (data as Tenant[] | null) ?? []
+}
+
+export async function upsertTenant(data: Partial<Tenant>): Promise<string> {
+  const result = await rpc<string>('rpc_upsert_tenant', {
+    p_id:       data.id ?? null,
+    p_name:     data.name,
+    p_slug:     data.slug ?? null,
+    p_status:   data.status ?? 'active',
+    p_plan:     data.plan ?? null,
+    p_timezone: data.timezone ?? 'America/Sao_Paulo',
+    p_locale:   data.locale ?? 'pt_BR',
+  })
+  return result
+}
+
+export async function deleteTenant(id: string): Promise<void> {
+  await rpc('rpc_delete_tenant', { p_id: id })
 }
 
 // ─── Audit ───────────────────────────────────────────────────────────────────
