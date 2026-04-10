@@ -1,13 +1,17 @@
 import { cn } from '@/lib/utils'
 
+interface OptionItem  { value: string; label: string }
+interface OptionGroup { group: string; options: OptionItem[] }
+
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string
   error?: string
   hint?: string
-  options: { value: string; label: string }[]
+  options?: OptionItem[]
+  groups?: OptionGroup[]
 }
 
-export function Select({ label, error, hint, options, className, id, ...props }: SelectProps) {
+export function Select({ label, error, hint, options, groups, className, id, ...props }: SelectProps) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
   return (
     <div className="space-y-1">
@@ -27,11 +31,18 @@ export function Select({ label, error, hint, options, className, id, ...props }:
         )}
         {...props}
       >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
+        {groups
+          ? groups.map((g) => (
+              <optgroup key={g.group} label={g.group}>
+                {g.options.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </optgroup>
+            ))
+          : options?.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))
+        }
       </select>
       {error && <p className="text-xs text-red-600">{error}</p>}
       {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}

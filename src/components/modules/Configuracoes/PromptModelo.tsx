@@ -155,10 +155,31 @@ export function PromptModelo() {
                 label="Modelo LLM"
                 value={agent.model_name}
                 onChange={(e) => set('model_name', e.target.value)}
-                options={[
-                  { value: 'claude-sonnet-4-20250514',  label: 'Claude Sonnet 4 (recomendado)' },
-                  { value: 'claude-opus-4-20250514',    label: 'Claude Opus 4 (máxima qualidade)' },
-                  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (mais rápido)'  },
+                groups={[
+                  {
+                    group: 'Anthropic — Claude',
+                    options: [
+                      { value: 'claude-sonnet-4-20250514',  label: 'Claude Sonnet 4 (recomendado)' },
+                      { value: 'claude-opus-4-20250514',    label: 'Claude Opus 4 (máxima qualidade)' },
+                      { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (mais rápido)' },
+                    ],
+                  },
+                  {
+                    group: 'OpenAI — ChatGPT',
+                    options: [
+                      { value: 'gpt-4o',       label: 'GPT-4o (recomendado)' },
+                      { value: 'gpt-4o-mini',  label: 'GPT-4o Mini (mais rápido)' },
+                      { value: 'o1-mini',      label: 'o1 Mini (raciocínio)' },
+                    ],
+                  },
+                  {
+                    group: 'Google — Gemini',
+                    options: [
+                      { value: 'gemini-2.0-flash',        label: 'Gemini 2.0 Flash (recomendado)' },
+                      { value: 'gemini-2.5-pro-preview',  label: 'Gemini 2.5 Pro (máxima qualidade)' },
+                      { value: 'gemini-1.5-flash',        label: 'Gemini 1.5 Flash (mais rápido)' },
+                    ],
+                  },
                 ]}
               />
             </div>
