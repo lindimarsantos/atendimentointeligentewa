@@ -97,7 +97,7 @@ export function VariablesReference({ defaultOpen = false }: Props) {
 
       {/* Body */}
       {open && (
-        <div className="p-3 grid grid-cols-1 min-[480px]:grid-cols-2 gap-4 bg-white">
+        <div className="p-3 grid grid-cols-1 gap-3 bg-white">
           {GROUPS.map((group) => (
             <div key={group.label} className={`rounded-lg p-3 min-w-0 ${group.bg}`}>
               <p className="text-xs font-semibold text-gray-600 mb-2">{group.label}</p>

@@ -120,12 +120,12 @@ export default function AgentesPage() {
               </dt>
               <dd className="font-medium text-gray-900">{modelLabel}</dd>
             </div>
-            {agent?.temperature !== undefined && (
+            {agent?.temperature != null && (
               <div className="flex items-center justify-between text-sm">
                 <dt className="flex items-center gap-1.5 text-gray-500">
                   <Zap className="h-3.5 w-3.5" /> Temperatura
                 </dt>
-                <dd className="font-medium text-gray-900">{agent.temperature.toFixed(2)}</dd>
+                <dd className="font-medium text-gray-900">{(agent.temperature as number).toFixed(2)}</dd>
               </div>
             )}
             {profile?.tone && (
@@ -134,10 +134,10 @@ export default function AgentesPage() {
                 <dd className="font-medium text-gray-900 capitalize">{profile.tone}</dd>
               </div>
             )}
-            {profile?.verbosity !== undefined && (
+            {profile?.verbosity && (
               <div className="flex items-center justify-between text-sm">
                 <dt className="text-gray-500">Verbosidade</dt>
-                <dd className="font-medium text-gray-900">{profile.verbosity}/10</dd>
+                <dd className="font-medium text-gray-900 capitalize">{profile.verbosity}</dd>
               </div>
             )}
           </dl>

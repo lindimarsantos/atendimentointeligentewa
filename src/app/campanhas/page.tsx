@@ -562,7 +562,7 @@ export default function CampanhasPage() {
           </div>
 
           {/* Variáveis — lateral direita */}
-          <div className="w-64 shrink-0 self-start sticky top-0">
+          <div className="w-80 shrink-0 self-start sticky top-0">
             <VariablesReference defaultOpen />
           </div>
 
