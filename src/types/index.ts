@@ -211,6 +211,46 @@ export interface AiDecision {
   created_at: string
 }
 
+// ─── Observability: Prediction Scores ───────────────────────────────────────
+
+export interface PredictionScore {
+  id: string
+  tenant_id: string
+  entity_type: string
+  entity_id: string
+  entity_name?: string
+  score_type: string
+  score_value: number
+  model_name?: string
+  explanation_jsonb?: Record<string, unknown>
+  created_at: string
+}
+
+// ─── Analytics: ROI ──────────────────────────────────────────────────────────
+
+export interface RoiSnapshot {
+  period_start: string
+  period_end: string
+  leads_count: number
+  appointments_count: number
+  show_rate: number
+  conversion_rate: number
+  revenue_total: number
+  media_spend: number
+  roi_value: number
+}
+
+export interface RoiSummary {
+  total_revenue: number
+  total_media_spend: number
+  total_leads: number
+  total_appointments: number
+  roi_ratio: number
+  avg_show_rate: number
+  avg_conversion_rate: number
+  snapshots: RoiSnapshot[] | null
+}
+
 // ─── AI: Message Intents ─────────────────────────────────────────────────────
 
 export interface MessageIntent {

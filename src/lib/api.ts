@@ -35,6 +35,8 @@ import type {
   AuditLog,
   IntegrationLog,
   JobEntry,
+  PredictionScore,
+  RoiSummary,
 } from '@/types'
 
 async function rpc<T>(name: string, params: Record<string, unknown> = {}): Promise<T> {
@@ -469,6 +471,27 @@ export async function upsertVoiceProfile(data: Partial<VoiceProfile>): Promise<v
     p_settings_jsonb: data.settings_jsonb ?? null,
     p_is_default: data.is_default ?? false,
   })
+}
+
+// ─── Observability: Prediction Scores ────────────────────────────────────────
+
+export async function listPredictionScores(params: {
+  entityType?: string
+  scoreType?: string
+  limit?: number
+} = {}): Promise<PredictionScore[]> {
+  const { data, error } = await supabase.rpc('rpc_list_prediction_scores', {
+    p_tenant_id:   getTenantId(),
+    p_entity_type: params.entityType ?? null,
+    p_score_type:  params.scoreType  ?? null,
+    p_limit:       params.limit      ?? 100,
+  })
+  if (error) throw error
+  return (data as PredictionScore[] | null) ?? []
+}
+
+export async function getRoiSummary(months = 6): Promise<RoiSummary> {
+  return rpc('rpc_get_roi_summary', { p_tenant_id: getTenantId(), p_months: months })
 }
 
 // ─── Super-admin: Tenant management ──────────────────────────────────────────
