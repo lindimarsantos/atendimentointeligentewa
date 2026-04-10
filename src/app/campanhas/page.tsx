@@ -19,6 +19,7 @@ import {
   Megaphone, FileText, Plus, Edit3, Trash2,
   Play, Pause, CheckCircle2, Clock, Send, Users,
 } from 'lucide-react'
+import { VariablesReference } from '@/components/ui/VariablesReference'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -496,9 +497,10 @@ export default function CampanhasPage() {
             rows={4}
             value={tmplForm.body}
             onChange={(e) => setTmplForm((p) => ({ ...p, body: e.target.value }))}
-            placeholder={"Olá {{1}}, seu agendamento foi confirmado para {{2}}."}
-            hint="Use {{1}}, {{2}}... para variáveis dinâmicas"
+            placeholder={"Olá {{cliente_primeiro_nome}}, seu agendamento foi confirmado para {{agendamento_data}}."}
+            hint="Use {{variavel}} para inserir dados dinâmicos"
           />
+          <VariablesReference />
           <Input
             label="Rodapé (opcional)"
             value={tmplForm.footer}
