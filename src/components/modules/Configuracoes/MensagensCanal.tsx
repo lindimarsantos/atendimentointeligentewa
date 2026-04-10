@@ -69,58 +69,72 @@ export function MensagensCanal() {
   if (!data) return null
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <VariablesReference defaultOpen />
-      <Textarea
-        label="Mensagem de boas-vindas"
-        rows={4}
-        value={data.welcome_message ?? ''}
-        onChange={(e) => set('welcome_message', e.target.value)}
-        placeholder="Olá! Bem-vindo à {{negocio_nome}}. Como posso ajudar você hoje?"
-        hint="Enviada quando o cliente inicia uma nova conversa"
-      />
+    <div className="flex gap-6 items-start">
 
-      <Textarea
-        label="Mensagem fora de horário"
-        rows={4}
-        value={data.out_of_hours_message ?? ''}
-        onChange={(e) => set('out_of_hours_message', e.target.value)}
-        placeholder="Olá! Nosso horário de atendimento é de segunda a sexta, das 9h às 18h. Deixe sua mensagem e retornaremos em breve!"
-        hint="Enviada quando o cliente entra em contato fora do horário de funcionamento"
-      />
+      {/* ── Main form ─────────────────────────────────────────────────────── */}
+      <div className="flex-1 min-w-0 space-y-6">
+        <Textarea
+          label="Mensagem de boas-vindas"
+          rows={4}
+          value={data.welcome_message ?? ''}
+          onChange={(e) => set('welcome_message', e.target.value)}
+          placeholder="Olá! Bem-vindo à {{negocio_nome}}. Como posso ajudar você hoje?"
+          hint="Enviada quando o cliente inicia uma nova conversa"
+        />
 
-      <Textarea
-        label="Mensagem de handoff (transferência para humano)"
-        rows={4}
-        value={data.handoff_message ?? ''}
-        onChange={(e) => set('handoff_message', e.target.value)}
-        placeholder="Vou te transferir para um de nossos atendentes. Por favor, aguarde um momento..."
-        hint="Enviada quando a conversa é transferida para atendimento humano"
-      />
+        <Textarea
+          label="Mensagem fora de horário"
+          rows={4}
+          value={data.out_of_hours_message ?? ''}
+          onChange={(e) => set('out_of_hours_message', e.target.value)}
+          placeholder="Olá! Nosso horário de atendimento é de segunda a sexta, das 9h às 18h. Deixe sua mensagem e retornaremos em breve!"
+          hint="Enviada quando o cliente entra em contato fora do horário de funcionamento"
+        />
 
-      <Card>
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Comportamento do canal</h3>
-        <div className="space-y-4">
-          <Toggle
-            checked={data.buffer_active}
-            onChange={(v) => set('buffer_active', v)}
-            label="Buffer de mensagens ativo"
-            description="Agrupa mensagens recebidas em sequência antes de processar"
-          />
-          <Toggle
-            checked={data.typing_simulation}
-            onChange={(v) => set('typing_simulation', v)}
-            label="Simular digitação"
-            description='Exibe o indicador "digitando..." antes de enviar respostas'
-          />
+        <Textarea
+          label="Mensagem de handoff (transferência para humano)"
+          rows={4}
+          value={data.handoff_message ?? ''}
+          onChange={(e) => set('handoff_message', e.target.value)}
+          placeholder="Vou te transferir para um de nossos atendentes. Por favor, aguarde um momento..."
+          hint="Enviada quando a conversa é transferida para atendimento humano"
+        />
+
+        {/* Variáveis inline — visível apenas em telas menores */}
+        <div className="xl:hidden">
+          <VariablesReference />
         </div>
-      </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave} loading={saving}>
-          Salvar mensagens
-        </Button>
+        <Card>
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">Comportamento do canal</h3>
+          <div className="space-y-4">
+            <Toggle
+              checked={data.buffer_active}
+              onChange={(v) => set('buffer_active', v)}
+              label="Buffer de mensagens ativo"
+              description="Agrupa mensagens recebidas em sequência antes de processar"
+            />
+            <Toggle
+              checked={data.typing_simulation}
+              onChange={(v) => set('typing_simulation', v)}
+              label="Simular digitação"
+              description='Exibe o indicador "digitando..." antes de enviar respostas'
+            />
+          </div>
+        </Card>
+
+        <div className="flex justify-end">
+          <Button onClick={handleSave} loading={saving}>
+            Salvar mensagens
+          </Button>
+        </div>
       </div>
+
+      {/* ── Sticky sidebar (desktop only) ─────────────────────────────────── */}
+      <div className="hidden xl:block w-72 shrink-0 sticky top-6 self-start">
+        <VariablesReference defaultOpen />
+      </div>
+
     </div>
   )
 }
