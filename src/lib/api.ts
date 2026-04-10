@@ -202,6 +202,9 @@ export async function upsertProfessional(data: Partial<Professional>): Promise<v
     p_name:      data.name,
     p_specialty: data.specialty ?? null,
     p_bio:       data.bio ?? null,
+    p_email:     data.email ?? null,
+    p_phone:     data.phone ?? null,
+    p_color:     data.color ?? null,
     p_is_active: data.is_active ?? true,
   })
 }
