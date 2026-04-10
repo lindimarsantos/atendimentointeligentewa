@@ -157,12 +157,21 @@ Todos os tabs com formulário inicializam com `DEFAULT_*` quando o RPC retorna `
 | `rpc_list_appointments`       | Agenda/Clientes — agora aceita `p_customer_id`      |
 | `rpc_dispatch_campaign`       | Campanhas — marca running + retorna payload n8n     |
 
-### n8n Webhooks (produção)
+### n8n Webhooks (produção — confirmados)
 
-| Webhook                        | URL                                                           |
-|--------------------------------|---------------------------------------------------------------|
-| Campaigns Dispatcher           | `https://n8n.atividadeweb.com.br/webhook/campaigns-dispatcher` |
-| _(demais paths a confirmar)_   | Base: `https://n8n.atividadeweb.com.br/webhook/`              |
+| Workflow                         | URL de produção                                                          |
+|----------------------------------|--------------------------------------------------------------------------|
+| WA - Inbound Intake              | `https://n8n.atividadeweb.com.br/webhook/wa-inbound`                    |
+| WA - Decision and Buffered Reply | `https://n8n.atividadeweb.com.br/webhook/wa-decision`                   |
+| Scheduling - Appointment Flow    | `https://n8n.atividadeweb.com.br/webhook/scheduling-appointment-flow`   |
+| Campaigns - Dispatcher           | `https://n8n.atividadeweb.com.br/webhook/campaigns-dispatcher` ⚠️ _a confirmar_ |
+
+Workflows sem webhook externo (cron interno no n8n):
+- `WA - Outbound Worker` — cron, consome `ops.outbound_message_queue`
+- `Scheduling - Reminder Worker` — cron, consome jobs de reminder
+- `Ops - General Queue Worker` — cron, consome `ops.job_queue`
+- `WA - Voice Reply Worker` — trigger interno
+- `Observability - Event Consumer` — trigger interno
 
 ---
 
