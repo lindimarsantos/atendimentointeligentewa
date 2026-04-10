@@ -77,7 +77,7 @@ export default function ConversaDetalhePage() {
   const handleAssumir = async () => {
     setSaving(true)
     try {
-      await assumirConversa(id, 'dashboard-agent')
+      await assumirConversa(id)
       toast('Conversa assumida com sucesso')
       setConversation((c) => c ? { ...c, status: 'open' } : c)
     } catch (e: unknown) {
