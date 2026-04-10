@@ -131,7 +131,7 @@ export function MensagensCanal() {
       </div>
 
       {/* ── Sticky sidebar (desktop only) ─────────────────────────────────── */}
-      <div className="hidden xl:block w-72 shrink-0 sticky top-6 self-start">
+      <div className="hidden xl:flex xl:flex-1 min-w-0 sticky top-6 self-start">
         <VariablesReference defaultOpen />
       </div>
 
