@@ -329,10 +329,12 @@ export interface ProfessionalAvailability {
   id?: string
   tenant_id?: string
   professional_id: string
-  day_of_week: number   // 0=Dom, 6=Sáb
-  start_time: string    // HH:mm
-  end_time: string      // HH:mm
+  day_of_week: number    // 0=Dom, 6=Sáb
+  start_time: string     // HH:mm
+  end_time: string       // HH:mm
   is_available: boolean
+  break_start?: string   // HH:mm — início da pausa (almoço/descanso)
+  break_end?: string     // HH:mm — fim da pausa
 }
 
 export interface AvailableSlot {

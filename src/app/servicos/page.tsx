@@ -104,8 +104,10 @@ function AvailabilityModal({
     try {
       await upsertProfessionalAvailability(
         professional.id,
-        slots.map(({ day_of_week, start_time, end_time, is_available }) => ({
+        slots.map(({ day_of_week, start_time, end_time, is_available, break_start, break_end }) => ({
           day_of_week, start_time, end_time, is_available,
+          break_start: break_start ?? '',
+          break_end:   break_end   ?? '',
         })),
       )
       toast('Agenda salva com sucesso')
@@ -156,57 +158,102 @@ function AvailabilityModal({
           {/* Week grid */}
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             {/* Header */}
-            <div className="grid grid-cols-[120px_1fr_1fr_1fr] bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 px-3 py-2">
+            <div className="grid grid-cols-[90px_44px_80px_8px_80px] bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 px-3 py-2 gap-2">
               <span>Dia</span>
-              <span>Disponível</span>
-              <span>Início</span>
-              <span>Fim</span>
+              <span>Ativo</span>
+              <span>Entrada</span>
+              <span />
+              <span>Saída</span>
             </div>
 
-            {slots.map((slot) => (
-              <div
-                key={slot.day_of_week}
-                className={`grid grid-cols-[120px_1fr_1fr_1fr] items-center px-3 py-2.5 border-b last:border-b-0 border-gray-100 transition-colors ${
-                  slot.is_available ? 'bg-white' : 'bg-gray-50'
-                }`}
-              >
-                {/* Day name */}
-                <span className={`text-sm font-medium ${slot.is_available ? 'text-gray-900' : 'text-gray-400'}`}>
-                  {DAYS[slot.day_of_week]}
-                </span>
+            {slots.map((slot) => {
+              const hasBreak = !!(slot.break_start && slot.break_end)
+              return (
+                <div
+                  key={slot.day_of_week}
+                  className={`px-3 py-2.5 border-b last:border-b-0 border-gray-100 transition-colors ${
+                    slot.is_available ? 'bg-white' : 'bg-gray-50'
+                  }`}
+                >
+                  {/* Main row: day + toggle + work hours */}
+                  <div className="grid grid-cols-[90px_44px_80px_8px_80px] items-center gap-2">
+                    <span className={`text-sm font-medium ${slot.is_available ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {DAYS[slot.day_of_week]}
+                    </span>
 
-                {/* Toggle */}
-                <div>
-                  <Toggle
-                    checked={slot.is_available}
-                    onChange={(v) => update(slot.day_of_week, { is_available: v })}
-                    label=""
-                  />
+                    <Toggle
+                      checked={slot.is_available}
+                      onChange={(v) => update(slot.day_of_week, {
+                        is_available: v,
+                        // clear break when disabling day
+                        ...(!v ? { break_start: undefined, break_end: undefined } : {}),
+                      })}
+                      label=""
+                    />
+
+                    <input
+                      type="time"
+                      value={slot.start_time}
+                      disabled={!slot.is_available}
+                      onChange={(e) => update(slot.day_of_week, { start_time: e.target.value })}
+                      className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-40 disabled:bg-gray-50"
+                    />
+
+                    <span className="text-xs text-gray-400 text-center">–</span>
+
+                    <input
+                      type="time"
+                      value={slot.end_time}
+                      disabled={!slot.is_available}
+                      onChange={(e) => update(slot.day_of_week, { end_time: e.target.value })}
+                      className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-40 disabled:bg-gray-50"
+                    />
+                  </div>
+
+                  {/* Break row — only when day is active */}
+                  {slot.is_available && (
+                    <div className="flex items-center gap-2 mt-2 pl-[134px]">
+                      <button
+                        onClick={() => update(slot.day_of_week, hasBreak
+                          ? { break_start: undefined, break_end: undefined }
+                          : { break_start: '12:00', break_end: '13:00' }
+                        )}
+                        className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-colors ${
+                          hasBreak
+                            ? 'border-amber-200 bg-amber-50 text-amber-700'
+                            : 'border-gray-200 bg-gray-50 text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        ☕ {hasBreak ? 'Pausa' : '+ Pausa'}
+                      </button>
+
+                      {hasBreak && (
+                        <>
+                          <input
+                            type="time"
+                            value={slot.break_start ?? '12:00'}
+                            onChange={(e) => update(slot.day_of_week, { break_start: e.target.value })}
+                            className="w-[80px] text-sm border border-amber-200 bg-amber-50 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                          />
+                          <span className="text-xs text-gray-400">–</span>
+                          <input
+                            type="time"
+                            value={slot.break_end ?? '13:00'}
+                            onChange={(e) => update(slot.day_of_week, { break_end: e.target.value })}
+                            className="w-[80px] text-sm border border-amber-200 bg-amber-50 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                          />
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {/* Start time */}
-                <input
-                  type="time"
-                  value={slot.start_time}
-                  disabled={!slot.is_available}
-                  onChange={(e) => update(slot.day_of_week, { start_time: e.target.value })}
-                  className="w-24 text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-40 disabled:bg-gray-50"
-                />
-
-                {/* End time */}
-                <input
-                  type="time"
-                  value={slot.end_time}
-                  disabled={!slot.is_available}
-                  onChange={(e) => update(slot.day_of_week, { end_time: e.target.value })}
-                  className="w-24 text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-40 disabled:bg-gray-50"
-                />
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <p className="text-xs text-gray-400">
-            Os horários definem quando a IA pode oferecer agendamentos para este profissional.
+            Os horários definem quando a IA pode oferecer agendamentos.
+            Clique em <strong>☕ + Pausa</strong> para configurar intervalo de almoço/descanso em cada dia.
             Conflitos com consultas já marcadas são excluídos automaticamente.
           </p>
 
