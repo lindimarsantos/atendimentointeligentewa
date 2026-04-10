@@ -20,8 +20,24 @@ export const supabase = new Proxy({} as SupabaseClient, {
   },
 })
 
-export const TENANT_ID =
+// ─── Tenant identity (updated by AuthContext after login) ─────────────────────
+
+let _tenantId: string =
   process.env.NEXT_PUBLIC_TENANT_ID || '5518085b-42e9-4608-8c56-890cef45ba9b'
+
+export function getTenantId(): string  { return _tenantId }
+export function setTenantId(id: string): void { _tenantId = id }
 
 export const CHANNEL_ID =
   process.env.NEXT_PUBLIC_CHANNEL_ID || '58c4062a-9fe9-4ae2-abff-5a8b5236a79e'
+
+// ─── Agent identity (updated by AuthContext after login) ──────────────────────
+
+let _agentId   = '00000000-0000-0000-0000-000000000001'
+let _agentName = 'Agente Dashboard'
+
+export function getCurrentAgentId(): string  { return _agentId }
+export function setCurrentAgentId(id: string): void { _agentId = id }
+
+export function getCurrentAgentName(): string  { return _agentName }
+export function setCurrentAgentName(name: string): void { _agentName = name }
