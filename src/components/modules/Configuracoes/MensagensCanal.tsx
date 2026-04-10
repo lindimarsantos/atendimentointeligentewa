@@ -9,6 +9,7 @@ import { getChannelSettings, updateChannelSettings } from '@/lib/api'
 import type { ChannelSettings } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { AlertCircle } from 'lucide-react'
+import { VariablesReference } from '@/components/ui/VariablesReference'
 
 const DEFAULT_CHANNEL: ChannelSettings = {
   id: '',
@@ -69,6 +70,7 @@ export function MensagensCanal() {
 
   return (
     <div className="space-y-6 max-w-2xl">
+      <VariablesReference defaultOpen />
       <Textarea
         label="Mensagem de boas-vindas"
         rows={4}

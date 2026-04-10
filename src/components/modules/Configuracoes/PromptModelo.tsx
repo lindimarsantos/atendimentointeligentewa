@@ -13,6 +13,7 @@ import type { AiAgent, PromptTemplate } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { AlertCircle, Plus, Edit3, Eye } from 'lucide-react'
 import { fmtDateTime } from '@/lib/utils'
+import { VariablesReference } from '@/components/ui/VariablesReference'
 
 const DEFAULT_AGENT: AiAgent = {
   id: '',
@@ -203,10 +204,9 @@ export function PromptModelo() {
               placeholder="Você é Sofia, uma assistente de atendimento da Clínica..."
               spellCheck={false}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Use <code className="bg-gray-100 px-1 rounded">{'{{'+'variavel'+'}}'}</code> para
-              inserir dados dinâmicos (ex: <code className="bg-gray-100 px-1 rounded">{'{{'+'cliente_nome'+'}}'}</code>)
-            </p>
+            <div className="mt-2">
+              <VariablesReference />
+            </div>
           </div>
 
           <div className="flex justify-end">
@@ -310,6 +310,7 @@ export function PromptModelo() {
             className="prompt-editor"
             placeholder="Olá {{cliente_nome}}! Bem-vindo à {{negocio_nome}}..."
           />
+          <VariablesReference />
           <Toggle
             checked={tplForm.is_active ?? true}
             onChange={(v) => setTplForm((p) => ({ ...p, is_active: v }))}
