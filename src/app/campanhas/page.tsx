@@ -463,61 +463,71 @@ export default function CampanhasPage() {
         open={tmplModal}
         onClose={() => setTmplModal(false)}
         title={tmplId ? 'Editar template' : 'Novo template'}
+        size="2xl"
       >
-        <div className="space-y-4">
-          <Input
-            label="Nome do template *"
-            value={tmplForm.name}
-            onChange={(e) => setTmplForm((p) => ({ ...p, name: e.target.value }))}
-            placeholder="Ex: confirmacao_agendamento"
-            hint="Use apenas letras minúsculas, números e underscores"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Select
-              label="Categoria"
-              value={tmplForm.category}
-              onChange={(e) => setTmplForm((p) => ({ ...p, category: e.target.value }))}
-              options={CATEGORIES}
+        <div className="flex gap-6 items-start">
+
+          {/* Formulário */}
+          <div className="flex-1 min-w-0 space-y-4">
+            <Input
+              label="Nome do template *"
+              value={tmplForm.name}
+              onChange={(e) => setTmplForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="Ex: confirmacao_agendamento"
+              hint="Use apenas letras minúsculas, números e underscores"
             />
-            <Select
-              label="Idioma"
-              value={tmplForm.language}
-              onChange={(e) => setTmplForm((p) => ({ ...p, language: e.target.value }))}
-              options={LANGUAGES}
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                label="Categoria"
+                value={tmplForm.category}
+                onChange={(e) => setTmplForm((p) => ({ ...p, category: e.target.value }))}
+                options={CATEGORIES}
+              />
+              <Select
+                label="Idioma"
+                value={tmplForm.language}
+                onChange={(e) => setTmplForm((p) => ({ ...p, language: e.target.value }))}
+                options={LANGUAGES}
+              />
+            </div>
+            <Input
+              label="Cabeçalho (opcional)"
+              value={tmplForm.header}
+              onChange={(e) => setTmplForm((p) => ({ ...p, header: e.target.value }))}
+              placeholder="Texto do cabeçalho"
             />
+            <Textarea
+              label="Corpo da mensagem *"
+              rows={5}
+              value={tmplForm.body}
+              onChange={(e) => setTmplForm((p) => ({ ...p, body: e.target.value }))}
+              placeholder={"Olá {{cliente_primeiro_nome}}, seu agendamento foi confirmado para {{agendamento_data}}."}
+              hint="Use {{variavel}} para inserir dados dinâmicos"
+            />
+            <Input
+              label="Rodapé (opcional)"
+              value={tmplForm.footer}
+              onChange={(e) => setTmplForm((p) => ({ ...p, footer: e.target.value }))}
+              placeholder="Ex: Responda SAIR para cancelar"
+            />
+            {!tmplId && (
+              <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                Templates criados aqui ficam com status <strong>Pendente</strong> até serem aprovados pelo WhatsApp Business.
+              </p>
+            )}
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" onClick={() => setTmplModal(false)}>Cancelar</Button>
+              <Button onClick={handleSaveTemplate} loading={tmplSaving}>
+                {tmplId ? 'Salvar alterações' : 'Criar template'}
+              </Button>
+            </div>
           </div>
-          <Input
-            label="Cabeçalho (opcional)"
-            value={tmplForm.header}
-            onChange={(e) => setTmplForm((p) => ({ ...p, header: e.target.value }))}
-            placeholder="Texto do cabeçalho"
-          />
-          <Textarea
-            label="Corpo da mensagem *"
-            rows={4}
-            value={tmplForm.body}
-            onChange={(e) => setTmplForm((p) => ({ ...p, body: e.target.value }))}
-            placeholder={"Olá {{cliente_primeiro_nome}}, seu agendamento foi confirmado para {{agendamento_data}}."}
-            hint="Use {{variavel}} para inserir dados dinâmicos"
-          />
-          <VariablesReference defaultOpen />
-          <Input
-            label="Rodapé (opcional)"
-            value={tmplForm.footer}
-            onChange={(e) => setTmplForm((p) => ({ ...p, footer: e.target.value }))}
-            placeholder="Ex: Responda SAIR para cancelar"
-          />
-          {!tmplId && (
-            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              Templates criados aqui ficam com status <strong>Pendente</strong> até serem aprovados pelo WhatsApp Business.
-            </p>
-          )}
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="secondary" onClick={() => setTmplModal(false)}>Cancelar</Button>
-            <Button onClick={handleSaveTemplate} loading={tmplSaving}>
-              {tmplId ? 'Salvar alterações' : 'Criar template'}
-            </Button>
+
+          {/* Variáveis — lateral direita */}
+          <div className="w-64 shrink-0 self-start sticky top-0">
+            <VariablesReference defaultOpen />
           </div>
+
         </div>
       </Modal>
     </div>
