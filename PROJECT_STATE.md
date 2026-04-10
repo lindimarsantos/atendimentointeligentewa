@@ -1,6 +1,6 @@
 # Project State — Atendimento Inteligente WA
 
-> Última atualização: 2026-04-10
+> Última atualização: 2026-04-10 (sessão 2)
 
 ---
 
@@ -67,15 +67,31 @@
 ### Clientes
 - [x] Lista com busca e tags coloridas
 - [x] Perfil com dados, memórias da IA, histórico de conversas e agendamentos
+- [x] Performance fix: conversas e agendamentos filtrados por customer_id no banco (migration 022)
 
 ### Observabilidade
 - [x] Job Queue — fila com status, tipo, erro, data
 - [x] Auditoria — logs de auditoria
 - [x] Integrações — integration logs
 
+### Agentes de IA
+- [x] Página `/agentes` com card de identidade do agente (nome, modelo, tom, temperatura)
+- [x] Capacidades habilitadas (memória, recomendações, agendamento, voz)
+- [x] KPIs em tempo real: sessões ativas, conversas resolvidas, taxa IA, aguardando humano
+- [x] Preview do system prompt
+- [x] Lista de sessões bot_active em andamento com link para atendimento
+- [x] Sidebar atualizado com rota /agentes
+
+### Campanhas — Dispatch via n8n
+- [x] Botão "Disparar via n8n" em campanhas (draft/paused/scheduled)
+- [x] `dispatchCampaign()` — chama RPC para marcar 'running' + dispara webhook n8n
+- [x] Migration 022: `rpc_dispatch_campaign` — valida status e retorna payload para n8n
+- [x] URL configurada: `https://n8n.atividadeweb.com.br/webhook/campaigns-dispatcher`
+
 ### Configurações — melhorias futuras
 - [ ] Tab `DadosNegócio`: permitir edição de horários via `rpc_update_business_hours`
 - [ ] Autenticação multi-tenant (Supabase Auth)
+- [ ] Confirmar webhook path de campanhas no n8n (aguardando URL de produção)
 
 ---
 

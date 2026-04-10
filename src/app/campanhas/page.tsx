@@ -10,14 +10,14 @@ import { Select } from '@/components/ui/Select'
 import { Tabs } from '@/components/ui/Tabs'
 import {
   listCampaigns, upsertCampaign, updateCampaignStatus, deleteCampaign,
-  listMessageTemplates, upsertMessageTemplate,
+  listMessageTemplates, upsertMessageTemplate, dispatchCampaign,
 } from '@/lib/api'
 import type { Campaign, MessageTemplate } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { fmtDateTime } from '@/lib/utils'
 import {
   Megaphone, FileText, Plus, Edit3, Trash2,
-  Play, Pause, CheckCircle2, Clock, Send, Users,
+  Play, Pause, CheckCircle2, Clock, Send, Users, Zap,
 } from 'lucide-react'
 import { VariablesReference } from '@/components/ui/VariablesReference'
 
@@ -79,14 +79,18 @@ function extractComponent(components: unknown, type: string): string {
 
 // ─── Campaign Card ────────────────────────────────────────────────────────────
 
+// n8n production webhook URL for campaign dispatch
+const N8N_CAMPAIGNS_WEBHOOK = 'https://n8n.atividadeweb.com.br/webhook/campaigns-dispatcher'
+
 function CampaignCard({
-  c, templates, onEdit, onDelete, onStatus,
+  c, templates, onEdit, onDelete, onStatus, onDispatch,
 }: {
   c: Campaign
   templates: MessageTemplate[]
   onEdit: () => void
   onDelete: () => void
   onStatus: (status: string) => Promise<void>
+  onDispatch: () => Promise<void>
 }) {
   const [busy, setBusy] = useState(false)
   const s    = CAMPAIGN_STATUS[c.status] ?? { label: c.status, variant: 'default' as const }
@@ -147,6 +151,15 @@ function CampaignCard({
               className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-40 transition-colors"
             >
               <Play className="h-3 w-3" /> Iniciar
+            </button>
+          )}
+          {(c.status === 'draft' || c.status === 'paused' || c.status === 'scheduled') && (
+            <button
+              onClick={async () => { setBusy(true); await onDispatch().finally(() => setBusy(false)) }}
+              disabled={busy}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-brand-50 text-brand-700 hover:bg-brand-100 disabled:opacity-40 transition-colors"
+            >
+              <Zap className="h-3 w-3" /> Disparar via n8n
             </button>
           )}
           {(c.status === 'running' || c.status === 'scheduled') && (
@@ -295,6 +308,16 @@ export default function CampanhasPage() {
     }
   }
 
+  const handleCampaignDispatch = async (id: string) => {
+    try {
+      await dispatchCampaign(id, N8N_CAMPAIGNS_WEBHOOK)
+      setCampaigns((prev) => prev.map((c) => c.id === id ? { ...c, status: 'running' } : c))
+      toast('Campanha disparada via n8n')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao disparar campanha', 'error')
+    }
+  }
+
   const handleDeleteCampaign = async (c: Campaign) => {
     if (!confirm(`Excluir campanha "${c.name}"?`)) return
     try {
@@ -402,6 +425,7 @@ export default function CampanhasPage() {
                 onEdit={() => openEditCampaign(c)}
                 onDelete={() => handleDeleteCampaign(c)}
                 onStatus={(status) => handleCampaignStatus(c.id, status)}
+                onDispatch={() => handleCampaignDispatch(c.id)}
               />
             ))}
           </div>

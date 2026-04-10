@@ -70,10 +70,11 @@ export async function getAppointmentsTrend(days = 30): Promise<DailyAppointmentM
 
 // ─── Conversations ───────────────────────────────────────────────────────────
 
-export async function listConversations(status?: string): Promise<Conversation[]> {
+export async function listConversations(status?: string, customerId?: string): Promise<Conversation[]> {
   return rpcList('rpc_list_conversations', {
-    p_tenant_id: getTenantId(),
-    p_status: status ?? null,
+    p_tenant_id:   getTenantId(),
+    p_status:      status     ?? null,
+    p_customer_id: customerId ?? null,
   })
 }
 
@@ -132,11 +133,13 @@ export async function getCustomer(customerId: string): Promise<Customer | null> 
 
 // ─── Appointments ────────────────────────────────────────────────────────────
 
-export async function listAppointments(dateFrom?: string, dateTo?: string): Promise<Appointment[]> {
+export async function listAppointments(dateFrom?: string, dateTo?: string, customerId?: string, professionalId?: string): Promise<Appointment[]> {
   return rpcList('rpc_list_appointments', {
-    p_tenant_id: getTenantId(),
-    p_date_from: dateFrom ?? null,
-    p_date_to: dateTo ?? dateFrom ?? null,
+    p_tenant_id:        getTenantId(),
+    p_date_from:        dateFrom       ?? null,
+    p_date_to:          dateTo         ?? null,
+    p_customer_id:      customerId     ?? null,
+    p_professional_id:  professionalId ?? null,
   })
 }
 
@@ -238,6 +241,23 @@ export async function upsertCampaign(data: Partial<Campaign>): Promise<void> {
 
 export async function updateCampaignStatus(id: string, status: string): Promise<void> {
   await rpc('rpc_update_campaign_status', { p_tenant_id: getTenantId(), p_id: id, p_status: status })
+}
+
+// Marks campaign as running via RPC then triggers n8n Campaigns Dispatcher webhook
+export async function dispatchCampaign(
+  campaignId: string,
+  n8nWebhookUrl: string,
+): Promise<void> {
+  const result = await rpc<{ campaign_id: string; template_id: string; tenant_id: string; target_count: number }>(
+    'rpc_dispatch_campaign',
+    { p_tenant_id: getTenantId(), p_campaign_id: campaignId },
+  )
+  // Fire-and-forget to n8n webhook
+  await fetch(n8nWebhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(result),
+  })
 }
 
 export async function deleteCampaign(id: string): Promise<void> {

@@ -63,13 +63,13 @@ export default function ClienteDetalhePage() {
     Promise.allSettled([
       getCustomer(id),
       getCustomerMemories(id),
-      listConversations(),
-      listAppointments(),
+      listConversations(undefined, id),
+      listAppointments(undefined, undefined, id),
     ]).then(([c, m, cv, a]) => {
       if (c.status  === 'fulfilled') setCustomer(c.value)
       if (m.status  === 'fulfilled') setMemories(m.value)
-      if (cv.status === 'fulfilled') setConvs(cv.value.filter(x => x.customer_id === id))
-      if (a.status  === 'fulfilled') setApts(a.value.filter(x => x.customer_id === id))
+      if (cv.status === 'fulfilled') setConvs(cv.value)
+      if (a.status  === 'fulfilled') setApts(a.value)
     }).finally(() => setLoading(false))
   }, [id])
 

@@ -24,6 +24,7 @@ import { useAuth } from '@/contexts/AuthContext'
 const nav = [
   { href: '/',                label: 'Visão Geral',     icon: LayoutDashboard },
   { href: '/atendimento',     label: 'Atendimento',     icon: MessageSquare   },
+  { href: '/agentes',         label: 'Agentes de IA',   icon: Bot             },
   { href: '/clientes',        label: 'Clientes',        icon: Users           },
   { href: '/agenda',          label: 'Agenda',          icon: Calendar        },
   { href: '/servicos',        label: 'Serviços',        icon: Scissors        },

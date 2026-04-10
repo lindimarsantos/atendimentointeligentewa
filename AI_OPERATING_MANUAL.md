@@ -139,6 +139,31 @@ Todos os tabs com formulário inicializam com `DEFAULT_*` quando o RPC retorna `
 | `rpc_conversations_trend` | Dashboard       |
 | `rpc_appointments_trend`  | Dashboard       |
 
+### RPCs extras (Migrations 017–022)
+
+| Função                        | Módulo / Ação                                      |
+|-------------------------------|-----------------------------------------------------|
+| `rpc_list_handoff_queue`      | Atendimento — fila de handoff humano                |
+| `rpc_update_handoff_status`   | Atendimento — aceitar/resolver/rejeitar handoff     |
+| `rpc_list_reminder_rules`     | Configurações — regras de lembrete (CRUD)           |
+| `rpc_upsert_reminder_rule`    | Configurações — criar/editar regra                  |
+| `rpc_delete_reminder_rule`    | Configurações — excluir regra                       |
+| `rpc_list_prediction_scores`  | Observabilidade — scores de predição da IA          |
+| `rpc_get_roi_summary`         | Observabilidade — resumo de ROI por mês             |
+| `rpc_list_all_tenants`        | Administração — listagem super-admin                |
+| `rpc_upsert_tenant`           | Administração — criar/editar tenant                 |
+| `rpc_delete_tenant`           | Administração — excluir tenant                      |
+| `rpc_list_conversations`      | Atendimento/Clientes — agora aceita `p_customer_id` |
+| `rpc_list_appointments`       | Agenda/Clientes — agora aceita `p_customer_id`      |
+| `rpc_dispatch_campaign`       | Campanhas — marca running + retorna payload n8n     |
+
+### n8n Webhooks (produção)
+
+| Webhook                        | URL                                                           |
+|--------------------------------|---------------------------------------------------------------|
+| Campaigns Dispatcher           | `https://n8n.atividadeweb.com.br/webhook/campaigns-dispatcher` |
+| _(demais paths a confirmar)_   | Base: `https://n8n.atividadeweb.com.br/webhook/`              |
+
 ---
 
 ## 7. Padrões de Código
