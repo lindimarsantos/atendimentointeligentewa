@@ -500,7 +500,7 @@ export default function CampanhasPage() {
             placeholder={"Olá {{cliente_primeiro_nome}}, seu agendamento foi confirmado para {{agendamento_data}}."}
             hint="Use {{variavel}} para inserir dados dinâmicos"
           />
-          <VariablesReference />
+          <VariablesReference defaultOpen />
           <Input
             label="Rodapé (opcional)"
             value={tmplForm.footer}
