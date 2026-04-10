@@ -72,7 +72,7 @@ export function MensagensCanal() {
     <div className="flex gap-6 items-start">
 
       {/* ── Main form ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-w-0 space-y-6">
+      <div className="flex-1 min-w-0 max-w-2xl space-y-6">
         <Textarea
           label="Mensagem de boas-vindas"
           rows={4}
