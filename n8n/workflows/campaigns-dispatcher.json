@@ -1,0 +1,217 @@
+{
+  "name": "Campaigns - Dispatcher",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "id": "cron-campaigns",
+      "name": "Cron - 10 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [60, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/rpc_list_running_campaigns",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_tenant_id: $vars.DEFAULT_TENANT_ID }) }}"
+      },
+      "id": "http-list-campaigns",
+      "name": "Buscar Campanhas Ativas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "check-length",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-tem-campanhas",
+      "name": "Tem Campanhas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {},
+      "id": "noop-sem-campanhas",
+      "name": "Sem Campanhas",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [700, 440]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-campanhas",
+      "name": "Loop Campanhas",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepara uma mensagem por destinatário\nconst campaign = $input.first().json;\nconst templateBody = campaign.template_body || '';\nconst recipients = campaign.recipients || [];\n\nif (recipients.length === 0) {\n  return [{ json: { skip: true, campaign_id: campaign.campaign_id } }];\n}\n\nreturn recipients.map(r => ({\n  json: {\n    campaign_id:   campaign.campaign_id,\n    tenant_id:     campaign.tenant_id,\n    customer_id:   r.customer_id,\n    customer_name: r.name,\n    phone:         r.phone,\n    total_recipients: recipients.length,\n    message: templateBody\n      .replace(/\\{\\{cliente_nome\\}\\}/g, r.name || '')\n      .replace(/\\{\\{cliente_primeiro_nome\\}\\}/g, (r.name || '').split(' ')[0] || '')\n      .replace(/\\{\\{1\\}\\}/g, r.name || '')\n  }\n}));\n"
+      },
+      "id": "code-preparar-msgs",
+      "name": "Preparar Mensagens",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": { "reset": false }
+      },
+      "id": "split-destinatarios",
+      "name": "Loop Destinatários",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1140, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.ZAPI_BASE_URL }}/instances/{{ $vars.ZAPI_INSTANCE_ID }}/token/{{ $vars.ZAPI_TOKEN }}/send-text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Client-Token", "value": "={{ $vars.ZAPI_CLIENT_TOKEN }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ phone: $json.phone, message: $json.message }) }}",
+        "options": {
+          "response": { "response": { "responseFormat": "json" } },
+          "timeout": 15000
+        }
+      },
+      "id": "http-send-zapi",
+      "name": "Enviar via Z-API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1360, 300]
+    },
+    {
+      "parameters": {
+        "unit": "seconds",
+        "resume": "timeInterval",
+        "value": 1
+      },
+      "id": "wait-rate-limit",
+      "name": "Aguardar 1s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1360, 460],
+      "webhookId": "wait-webhook-campaigns"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/rpc_complete_campaign",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_tenant_id: $json.tenant_id, p_campaign_id: $json.campaign_id, p_sent_count: $json.total_recipients }) }}"
+      },
+      "id": "http-finalizar",
+      "name": "Finalizar Campanha",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1580, 300]
+    }
+  ],
+  "connections": {
+    "Cron - 10 min": {
+      "main": [[{ "node": "Buscar Campanhas Ativas", "type": "main", "index": 0 }]]
+    },
+    "Buscar Campanhas Ativas": {
+      "main": [[{ "node": "Tem Campanhas?", "type": "main", "index": 0 }]]
+    },
+    "Tem Campanhas?": {
+      "main": [
+        [{ "node": "Loop Campanhas", "type": "main", "index": 0 }],
+        [{ "node": "Sem Campanhas",  "type": "main", "index": 0 }]
+      ]
+    },
+    "Loop Campanhas": {
+      "main": [
+        [{ "node": "Preparar Mensagens", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Preparar Mensagens": {
+      "main": [[{ "node": "Loop Destinatários", "type": "main", "index": 0 }]]
+    },
+    "Loop Destinatários": {
+      "main": [
+        [{ "node": "Enviar via Z-API", "type": "main", "index": 0 }],
+        [{ "node": "Finalizar Campanha", "type": "main", "index": 0 }]
+      ]
+    },
+    "Enviar via Z-API": {
+      "main": [[{ "node": "Aguardar 1s", "type": "main", "index": 0 }]]
+    },
+    "Aguardar 1s": {
+      "main": [[{ "node": "Loop Destinatários", "type": "main", "index": 0 }]]
+    },
+    "Finalizar Campanha": {
+      "main": [[{ "node": "Loop Campanhas", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "",
+    "timezone": "America/Sao_Paulo"
+  },
+  "staticData": null,
+  "tags": [
+    { "createdAt": "2026-04-10", "updatedAt": "2026-04-10", "id": "campaigns", "name": "campaigns" }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2026-04-10T00:00:00.000Z",
+  "versionId": "1"
+}

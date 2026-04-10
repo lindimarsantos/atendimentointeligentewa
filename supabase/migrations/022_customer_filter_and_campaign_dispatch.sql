@@ -113,7 +113,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_list_appointments(uuid, date, date, uuid, u
   TO anon, authenticated, service_role;
 
 -- ── rpc_dispatch_campaign ─────────────────────────────────────────────────────
--- Marks the campaign as running and returns payload for n8n webhook
+-- Marks the campaign as running and returns payload for n8n workflow
 CREATE OR REPLACE FUNCTION public.rpc_dispatch_campaign(
   p_tenant_id   uuid,
   p_campaign_id uuid
@@ -121,7 +121,7 @@ CREATE OR REPLACE FUNCTION public.rpc_dispatch_campaign(
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, ops
+SET search_path = public, messaging
 AS $$
 DECLARE
   v_template_id   uuid;
@@ -130,7 +130,7 @@ DECLARE
 BEGIN
   SELECT status, template_id, target_count
     INTO v_status, v_template_id, v_target_count
-  FROM ops.campaigns
+  FROM messaging.campaigns
   WHERE id = p_campaign_id AND tenant_id = p_tenant_id;
 
   IF NOT FOUND THEN
@@ -141,7 +141,7 @@ BEGIN
     RAISE EXCEPTION 'Campaign status "%" cannot be dispatched', v_status;
   END IF;
 
-  UPDATE ops.campaigns
+  UPDATE messaging.campaigns
   SET status = 'running', updated_at = now()
   WHERE id = p_campaign_id AND tenant_id = p_tenant_id;
 

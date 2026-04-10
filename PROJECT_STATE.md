@@ -83,10 +83,12 @@
 - [x] Sidebar atualizado com rota /agentes
 
 ### Campanhas — Dispatch via n8n
-- [x] Botão "Disparar via n8n" em campanhas (draft/paused/scheduled)
-- [x] `dispatchCampaign()` — chama RPC para marcar 'running' + dispara webhook n8n
-- [x] Migration 022: `rpc_dispatch_campaign` — valida status e retorna payload para n8n
-- [x] URL configurada: `https://n8n.atividadeweb.com.br/webhook/campaigns-dispatcher`
+- [x] Botão "Disparar" em campanhas (draft/paused/scheduled) — marca como 'running'
+- [x] Migration 022: `rpc_dispatch_campaign` — valida status, muda para running
+- [x] Migration 023: `rpc_list_running_campaigns`, `rpc_complete_campaign`
+- [x] Workflow n8n: `n8n/workflows/campaigns-dispatcher.json` (cron 10min, pronto para importar)
+- [x] Workflow processa: busca running → pega clientes → substitui variáveis → envia Z-API → finaliza
+- [x] `n8n/README.md` — guia de importação e variáveis necessárias
 
 ### Configurações — melhorias futuras
 - [ ] Tab `DadosNegócio`: permitir edição de horários via `rpc_update_business_hours`
