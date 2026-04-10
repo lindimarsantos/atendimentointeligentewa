@@ -23,8 +23,8 @@ import type { Conversation, Message, MessageIntent } from '@/types'
 import { fmtDateTime, statusVariants } from '@/lib/utils'
 import { toast } from '@/components/ui/Toast'
 import {
-  ArrowLeft, UserCheck, StickyNote, CalendarPlus,
-  CheckCircle2, Loader2, AlertCircle, Tag,
+  ArrowLeft, UserCheck, StickyNote,
+  CheckCircle2, AlertCircle, Tag,
 } from 'lucide-react'
 
 const statusLabel: Record<string, string> = {

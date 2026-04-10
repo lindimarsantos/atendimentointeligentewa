@@ -1,6 +1,6 @@
 # Project State — Atendimento Inteligente WA
 
-> Última atualização: 2026-04-09
+> Última atualização: 2026-04-10
 
 ---
 
@@ -26,6 +26,22 @@
 - [x] Fix null-state: todos os tabs inicializam com defaults quando sem dados
 - [x] Migrations 001–003 aplicadas (RPCs de configuração, auditoria, trends)
 
+### Analytics e ROI
+- [x] KPIs de performance da IA (bot_resolution_rate, handoff_rate, tempos médios)
+- [x] KPIs operacionais (mensagens, resolvidas, agendamentos, clientes ativos)
+- [x] Gráfico de área — tendência de conversas (resolved, handoffs) com período 7/14/30 dias
+- [x] Gráfico de barras — agendamentos (total, realizados, cancelados)
+- [x] Progress bars — eficiência da IA e distribuição de status de conversas
+
+### Billing e Uso
+- [x] Plano atual com badge de status
+- [x] Barras de consumo por recurso (mensagens, conversas, agendamentos, jobs, clientes)
+- [x] Estatísticas operacionais em cards (mensagens, jobs, lembretes, clientes novos)
+
+### Administração
+- [x] Tab Feature Flags — lista com toggle ativo/inativo (persiste via `updateFeatureFlag`)
+- [x] Tab Tenant — visão de configurações do tenant com link para edição em /configuracoes
+
 ### Outros módulos (estrutura existe)
 - [x] Rotas criadas para: atendimento, clientes, agenda, serviços, campanhas, analytics, billing, administração, observabilidade
 
@@ -34,23 +50,28 @@
 ## 📋 Backlog (próximas sessões)
 
 ### Dashboard (Visão Geral)
-- [ ] Métricas principais (RPCs já existem: `rpc_dashboard_summary`, `rpc_conversations_trend`)
-- [ ] Gráficos de volume
-- [ ] Alertas ativos
+- [x] 6 KPIs (clientes, conversas, handoff, resolvidas, agendamentos, taxa IA)
+- [x] Gráfico de área — tendência de conversas (7/14/30 dias)
+- [x] Gráfico de barras — agendamentos por dia
+- [x] Donuts — distribuição de status + eficiência da IA
+- [x] Métricas operacionais (mensagens, jobs, lembretes)
+- [x] Listas recentes: conversas + agendamentos
+- [x] Alerta banner para conversas aguardando humano
 
 ### Atendimento
-- [ ] Lista de conversas ativas (`rpc_list_conversations`)
-- [ ] Interface de chat (`rpc_get_conversation_messages`)
-- [ ] Ações: assumir, encerrar, registrar nota
+- [x] Lista com filtro por status (5 tabs)
+- [x] Interface de chat (bolhas inbound/outbound + badges de intenção)
+- [x] Ações: assumir, encerrar, registrar nota
+- [x] Painel lateral: Resumo IA, Memórias do cliente, Timeline de decisões
 
 ### Clientes
-- [ ] Lista + busca (`rpc_list_customers`)
-- [ ] Perfil do cliente com memórias e histórico
+- [x] Lista com busca e tags coloridas
+- [x] Perfil com dados, memórias da IA, histórico de conversas e agendamentos
 
 ### Observabilidade
-- [ ] Audit logs (`rpc_list_audit_logs`)
-- [ ] Integration logs
-- [ ] Jobs monitor
+- [x] Job Queue — fila com status, tipo, erro, data
+- [x] Auditoria — logs de auditoria
+- [x] Integrações — integration logs
 
 ### Configurações — melhorias futuras
 - [ ] Tab `DadosNegócio`: permitir edição de horários via `rpc_update_business_hours`
