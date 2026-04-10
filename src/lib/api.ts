@@ -376,16 +376,18 @@ export async function getTenantSettings(): Promise<TenantSettings | null> {
 
 export async function updateTenantSettings(data: Partial<TenantSettings>): Promise<void> {
   await rpc('rpc_update_tenant_settings', {
-    p_tenant_id: getTenantId(),
-    p_business_name: data.business_name,
-    p_timezone: data.timezone,
-    p_language: data.language,
-    p_intake_mode: data.intake_mode,
-    p_allow_audio: data.allow_audio,
-    p_allow_image: data.allow_image,
-    p_allow_voice: data.allow_voice,
+    p_tenant_id:                getTenantId(),
+    p_business_name:            data.business_name,
+    p_whatsapp_display_name:    data.whatsapp_display_name,
+    p_timezone:                 data.timezone,
+    p_language:                 data.language,
+    p_intake_mode:              data.intake_mode,
+    p_allow_audio:              data.allow_audio,
+    p_allow_image:              data.allow_image,
+    p_allow_video:              data.allow_video,
+    p_allow_voice:              data.allow_voice,
     p_human_approval_high_risk: data.human_approval_high_risk,
-    p_auto_create_customer: data.auto_create_customer,
+    p_auto_create_customer:     data.auto_create_customer,
   })
 }
 

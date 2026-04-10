@@ -297,11 +297,13 @@ export interface TenantSettings {
   id: string
   tenant_id: string
   business_name: string
+  whatsapp_display_name?: string
   timezone: string
   language: string
   intake_mode: 'bot_first' | 'human_first' | 'mixed'
   allow_audio: boolean
   allow_image: boolean
+  allow_video: boolean
   allow_voice: boolean
   human_approval_high_risk: boolean
   auto_create_customer: boolean

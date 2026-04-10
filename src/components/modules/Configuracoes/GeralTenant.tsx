@@ -28,13 +28,15 @@ const DEFAULT_TENANT: TenantSettings = {
   id: '',
   tenant_id: '',
   business_name: '',
+  whatsapp_display_name: '',
   timezone: 'America/Sao_Paulo',
   language: 'pt-BR',
   intake_mode: 'bot_first',
   allow_audio: true,
   allow_image: true,
+  allow_video: true,
   allow_voice: false,
-  human_approval_high_risk: true,
+  human_approval_high_risk: false,
   auto_create_customer: true,
   updated_at: '',
 }
@@ -89,12 +91,21 @@ export function GeralTenant() {
       {/* Identity */}
       <section className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Identidade</h3>
-        <Input
-          label="Nome do negócio"
-          value={data.business_name}
-          onChange={(e) => set('business_name', e.target.value)}
-          placeholder="Clínica Exemplo Ltda"
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Nome do negócio"
+            value={data.business_name}
+            onChange={(e) => set('business_name', e.target.value)}
+            placeholder="Clínica Exemplo Ltda"
+          />
+          <Input
+            label="Nome exibido no WhatsApp"
+            value={data.whatsapp_display_name ?? ''}
+            onChange={(e) => set('whatsapp_display_name', e.target.value)}
+            placeholder="Ex: Clínica Sofia"
+            hint="Nome que aparece para o cliente no WhatsApp"
+          />
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <Select
             label="Fuso horário"
@@ -146,6 +157,12 @@ export function GeralTenant() {
             onChange={(v) => set('allow_image', v)}
             label="Aceitar imagens"
             description="Clientes podem enviar imagens e documentos"
+          />
+          <Toggle
+            checked={data.allow_video}
+            onChange={(v) => set('allow_video', v)}
+            label="Aceitar vídeos"
+            description="Clientes podem enviar vídeos"
           />
           <Toggle
             checked={data.allow_voice}
