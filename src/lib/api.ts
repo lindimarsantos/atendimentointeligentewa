@@ -42,6 +42,7 @@ import type {
   PredictionScore,
   RoiSummary,
   BusinessContact,
+  ApiKeys,
   UserTenantMembership,
 } from '@/types'
 
@@ -619,6 +620,20 @@ export async function updateBusinessContact(contact: BusinessContact): Promise<v
   await rpc('rpc_update_business_contact', {
     p_tenant_id: getTenantId(),
     p_contact:   contact,
+  })
+}
+
+// ─── API Keys ────────────────────────────────────────────────────────────────
+
+export async function getApiKeys(): Promise<ApiKeys> {
+  const data = await rpc<ApiKeys | null>('rpc_get_api_keys', { p_tenant_id: getTenantId() })
+  return data ?? {}
+}
+
+export async function upsertApiKeys(keys: ApiKeys): Promise<void> {
+  await rpc('rpc_upsert_api_keys', {
+    p_tenant_id: getTenantId(),
+    p_keys:      keys,
   })
 }
 

@@ -375,6 +375,14 @@ export interface BusinessContact {
   business_hours?:   string
 }
 
+// ─── LLM API Keys ─────────────────────────────────────────────────────────────
+
+export interface ApiKeys {
+  anthropic?: string   // Anthropic — Claude
+  openai?:    string   // OpenAI — ChatGPT
+  google?:    string   // Google — Gemini
+}
+
 // ─── Tenant membership (for switcher) ────────────────────────────────────────
 
 export interface UserTenantMembership {
