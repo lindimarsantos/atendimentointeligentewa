@@ -18,6 +18,8 @@ interface AuthState {
   loading: boolean
   signIn(email: string, password: string): Promise<void>
   signOut(): Promise<void>
+  resetPasswordForEmail(email: string): Promise<void>
+  updatePassword(password: string): Promise<void>
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -92,8 +94,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole(null)
   }
 
+  async function resetPasswordForEmail(email: string) {
+    const redirectTo = `${window.location.origin}/reset-password`
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+    if (error) throw error
+  }
+
+  async function updatePassword(password: string) {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  }
+
   return (
-    <AuthContext.Provider value={{ user, tenantId, role, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, tenantId, role, loading, signIn, signOut, resetPasswordForEmail, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )

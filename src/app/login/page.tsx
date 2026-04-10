@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Bot, Mail, Lock, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -68,9 +69,14 @@ export default function LoginPage() {
 
             {/* Senha */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Senha
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">
+                  Senha
+                </label>
+                <Link href="/forgot-password" className="text-xs text-brand-600 hover:text-brand-700 transition-colors">
+                  Esqueceu a senha?
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 <input
