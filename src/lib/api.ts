@@ -212,8 +212,40 @@ export async function listCampaigns(): Promise<Campaign[]> {
   return rpcList('rpc_list_campaigns', { p_tenant_id: TENANT_ID })
 }
 
+export async function upsertCampaign(data: Partial<Campaign>): Promise<void> {
+  await rpc('rpc_upsert_campaign', {
+    p_tenant_id:    TENANT_ID,
+    p_id:           data.id ?? null,
+    p_name:         data.name,
+    p_template_id:  data.template_id ?? null,
+    p_target_count: data.target_count ?? null,
+    p_scheduled_at: data.scheduled_at ?? null,
+    p_status:       data.status ?? 'draft',
+  })
+}
+
+export async function updateCampaignStatus(id: string, status: string): Promise<void> {
+  await rpc('rpc_update_campaign_status', { p_tenant_id: TENANT_ID, p_id: id, p_status: status })
+}
+
+export async function deleteCampaign(id: string): Promise<void> {
+  await rpc('rpc_delete_campaign', { p_tenant_id: TENANT_ID, p_id: id })
+}
+
 export async function listMessageTemplates(): Promise<MessageTemplate[]> {
   return rpcList('rpc_list_message_templates', { p_tenant_id: TENANT_ID })
+}
+
+export async function upsertMessageTemplate(data: Partial<MessageTemplate> & { components: unknown[] }): Promise<void> {
+  await rpc('rpc_upsert_message_template', {
+    p_tenant_id:  TENANT_ID,
+    p_id:         data.id ?? null,
+    p_name:       data.name,
+    p_category:   data.category ?? 'utility',
+    p_language:   data.language ?? 'pt_BR',
+    p_components: data.components,
+    p_status:     data.status ?? 'pending',
+  })
 }
 
 // ─── AI: Conversation Details (summaries, decisions, memories, intents) ──────
