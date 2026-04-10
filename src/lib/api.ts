@@ -243,21 +243,17 @@ export async function updateCampaignStatus(id: string, status: string): Promise<
   await rpc('rpc_update_campaign_status', { p_tenant_id: getTenantId(), p_id: id, p_status: status })
 }
 
-// Marks campaign as running via RPC then triggers n8n Campaigns Dispatcher webhook
-export async function dispatchCampaign(
-  campaignId: string,
-  n8nWebhookUrl: string,
-): Promise<void> {
-  const result = await rpc<{ campaign_id: string; template_id: string; tenant_id: string; target_count: number }>(
-    'rpc_dispatch_campaign',
-    { p_tenant_id: getTenantId(), p_campaign_id: campaignId },
-  )
-  // Fire-and-forget to n8n webhook
-  await fetch(n8nWebhookUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(result),
+// Marks campaign as running via RPC.
+// When the "Campaigns - Dispatcher" workflow is added to n8n, wire its
+// production webhook URL here to trigger the actual dispatch.
+export async function dispatchCampaign(campaignId: string): Promise<void> {
+  await rpc('rpc_dispatch_campaign', {
+    p_tenant_id:   getTenantId(),
+    p_campaign_id: campaignId,
   })
+  // TODO: fire n8n webhook when Campaigns - Dispatcher workflow is created
+  // const N8N_URL = 'https://n8n.atividadeweb.com.br/webhook/campaigns-dispatcher'
+  // await fetch(N8N_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(result) })
 }
 
 export async function deleteCampaign(id: string): Promise<void> {

@@ -79,9 +79,6 @@ function extractComponent(components: unknown, type: string): string {
 
 // ─── Campaign Card ────────────────────────────────────────────────────────────
 
-// n8n production webhook URL for campaign dispatch
-const N8N_CAMPAIGNS_WEBHOOK = 'https://n8n.atividadeweb.com.br/webhook/campaigns-dispatcher'
-
 function CampaignCard({
   c, templates, onEdit, onDelete, onStatus, onDispatch,
 }: {
@@ -310,9 +307,9 @@ export default function CampanhasPage() {
 
   const handleCampaignDispatch = async (id: string) => {
     try {
-      await dispatchCampaign(id, N8N_CAMPAIGNS_WEBHOOK)
+      await dispatchCampaign(id)
       setCampaigns((prev) => prev.map((c) => c.id === id ? { ...c, status: 'running' } : c))
-      toast('Campanha disparada via n8n')
+      toast('Campanha marcada como ativa — aguardando workflow n8n')
     } catch (e: unknown) {
       toast(e instanceof Error ? e.message : 'Erro ao disparar campanha', 'error')
     }

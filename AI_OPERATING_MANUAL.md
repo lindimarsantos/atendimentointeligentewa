@@ -164,7 +164,7 @@ Todos os tabs com formulário inicializam com `DEFAULT_*` quando o RPC retorna `
 | WA - Inbound Intake              | `https://n8n.atividadeweb.com.br/webhook/wa-inbound`                    |
 | WA - Decision and Buffered Reply | `https://n8n.atividadeweb.com.br/webhook/wa-decision`                   |
 | Scheduling - Appointment Flow    | `https://n8n.atividadeweb.com.br/webhook/scheduling-appointment-flow`   |
-| Campaigns - Dispatcher           | `https://n8n.atividadeweb.com.br/webhook/campaigns-dispatcher` ⚠️ _a confirmar_ |
+| Campaigns - Dispatcher           | ❌ _Workflow ainda não criado no n8n_                                             |
 
 Workflows sem webhook externo (cron interno no n8n):
 - `WA - Outbound Worker` — cron, consome `ops.outbound_message_queue`
