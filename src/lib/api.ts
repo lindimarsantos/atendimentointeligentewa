@@ -15,6 +15,8 @@ import type {
   Appointment,
   Service,
   Professional,
+  ProfessionalAvailability,
+  AvailableSlot,
   Campaign,
   MessageTemplate,
   ConversationSummary,
@@ -221,6 +223,39 @@ export async function upsertProfessional(data: Partial<Professional>): Promise<v
 
 export async function deleteProfessional(id: string): Promise<void> {
   await rpc('rpc_delete_professional', { p_tenant_id: getTenantId(), p_id: id })
+}
+
+export async function getProfessionalAvailability(professionalId: string): Promise<ProfessionalAvailability[]> {
+  return rpcList('rpc_get_professional_availability', {
+    p_tenant_id:       getTenantId(),
+    p_professional_id: professionalId,
+  })
+}
+
+export async function upsertProfessionalAvailability(
+  professionalId: string,
+  slots: Pick<ProfessionalAvailability, 'day_of_week' | 'start_time' | 'end_time' | 'is_available'>[],
+): Promise<void> {
+  await rpc('rpc_upsert_professional_availability', {
+    p_tenant_id:       getTenantId(),
+    p_professional_id: professionalId,
+    p_slots:           slots,
+  })
+}
+
+export async function getAvailableSlots(
+  professionalId: string,
+  serviceId: string,
+  dateFrom: string,
+  dateTo: string,
+): Promise<AvailableSlot[]> {
+  return rpcList('rpc_get_available_slots', {
+    p_tenant_id:       getTenantId(),
+    p_professional_id: professionalId,
+    p_service_id:      serviceId,
+    p_date_from:       dateFrom,
+    p_date_to:         dateTo,
+  })
 }
 
 // ─── Campaigns / Templates ───────────────────────────────────────────────────

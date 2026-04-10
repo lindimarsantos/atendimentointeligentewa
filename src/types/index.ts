@@ -323,6 +323,25 @@ export interface BusinessHour {
   is_open: boolean
 }
 
+// ─── Scheduling: Professional Availability ───────────────────────────────────
+
+export interface ProfessionalAvailability {
+  id?: string
+  tenant_id?: string
+  professional_id: string
+  day_of_week: number   // 0=Dom, 6=Sáb
+  start_time: string    // HH:mm
+  end_time: string      // HH:mm
+  is_available: boolean
+}
+
+export interface AvailableSlot {
+  start: string          // ISO timestamp
+  end: string            // ISO timestamp
+  professional_id: string
+  service_id: string
+}
+
 // ─── Config: Channel Settings ────────────────────────────────────────────────
 
 export interface ChannelSettings {

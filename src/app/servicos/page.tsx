@@ -11,21 +11,34 @@ import { Toggle } from '@/components/ui/Toggle'
 import {
   listServices, upsertService, deleteService,
   listProfessionals, upsertProfessional, deleteProfessional,
+  getProfessionalAvailability, upsertProfessionalAvailability,
 } from '@/lib/api'
-import type { Service, Professional } from '@/types'
+import type { Service, Professional, ProfessionalAvailability } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import {
   Scissors, Clock, DollarSign, Search, Users,
-  AlertTriangle, CheckCircle2, Plus, Edit3, Trash2,
+  AlertTriangle, CheckCircle2, Plus, Edit3, Trash2, CalendarDays,
 } from 'lucide-react'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
 function fmtPrice(min?: number, max?: number): string | null {
   if (min == null && max == null) return null
   const fmt = (n: number) => `R$ ${n.toFixed(0)}`
   if (min != null && max != null && min !== max) return `${fmt(min)} – ${fmt(max)}`
   return fmt((min ?? max)!)
+}
+
+function defaultSlots(): ProfessionalAvailability[] {
+  return DAYS.map((_, i) => ({
+    professional_id: '',
+    day_of_week:     i,
+    start_time:      '09:00',
+    end_time:        '18:00',
+    is_available:    i >= 1 && i <= 5, // Seg–Sex por padrão
+  }))
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
@@ -36,6 +49,174 @@ function EmptyState({ icon: Icon, label }: { icon: React.ComponentType<{ classNa
       <Icon className="h-10 w-10 mb-3" />
       <p className="text-sm">{label}</p>
     </div>
+  )
+}
+
+// ─── Availability Modal ───────────────────────────────────────────────────────
+
+function AvailabilityModal({
+  professional,
+  open,
+  onClose,
+}: {
+  professional: Professional
+  open: boolean
+  onClose: () => void
+}) {
+  const [slots, setSlots]   = useState<ProfessionalAvailability[]>(defaultSlots())
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving]   = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setLoading(true)
+    getProfessionalAvailability(professional.id)
+      .then((data) => {
+        if (data.length === 0) {
+          setSlots(defaultSlots())
+        } else {
+          // Merge fetched data into full 7-day array
+          const base = defaultSlots()
+          data.forEach((row) => {
+            const idx = base.findIndex((s) => s.day_of_week === row.day_of_week)
+            if (idx >= 0) base[idx] = { ...base[idx], ...row }
+          })
+          setSlots(base)
+        }
+      })
+      .catch(() => setSlots(defaultSlots()))
+      .finally(() => setLoading(false))
+  }, [open, professional.id])
+
+  function update(dow: number, patch: Partial<ProfessionalAvailability>) {
+    setSlots((prev) => prev.map((s) => s.day_of_week === dow ? { ...s, ...patch } : s))
+  }
+
+  function applyPreset(preset: 'weekdays' | 'all' | 'none') {
+    setSlots((prev) => prev.map((s) => ({
+      ...s,
+      is_available: preset === 'all' ? true : preset === 'none' ? false : s.day_of_week >= 1 && s.day_of_week <= 5,
+    })))
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      await upsertProfessionalAvailability(
+        professional.id,
+        slots.map(({ day_of_week, start_time, end_time, is_available }) => ({
+          day_of_week, start_time, end_time, is_available,
+        })),
+      )
+      toast('Agenda salva com sucesso')
+      onClose()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar agenda', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`Agenda semanal — ${professional.name}`}
+    >
+      {loading ? (
+        <div className="flex items-center justify-center h-40">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-600" />
+        </div>
+      ) : (
+        <div className="space-y-4">
+
+          {/* Preset buttons */}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-gray-500 mr-1">Atalhos:</span>
+            <button
+              onClick={() => applyPreset('weekdays')}
+              className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+            >
+              Seg–Sex
+            </button>
+            <button
+              onClick={() => applyPreset('all')}
+              className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+            >
+              Todos os dias
+            </button>
+            <button
+              onClick={() => applyPreset('none')}
+              className="px-2.5 py-1 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+            >
+              Nenhum
+            </button>
+          </div>
+
+          {/* Week grid */}
+          <div className="border border-gray-200 rounded-xl overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-[120px_1fr_1fr_1fr] bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 px-3 py-2">
+              <span>Dia</span>
+              <span>Disponível</span>
+              <span>Início</span>
+              <span>Fim</span>
+            </div>
+
+            {slots.map((slot) => (
+              <div
+                key={slot.day_of_week}
+                className={`grid grid-cols-[120px_1fr_1fr_1fr] items-center px-3 py-2.5 border-b last:border-b-0 border-gray-100 transition-colors ${
+                  slot.is_available ? 'bg-white' : 'bg-gray-50'
+                }`}
+              >
+                {/* Day name */}
+                <span className={`text-sm font-medium ${slot.is_available ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {DAYS[slot.day_of_week]}
+                </span>
+
+                {/* Toggle */}
+                <div>
+                  <Toggle
+                    checked={slot.is_available}
+                    onChange={(v) => update(slot.day_of_week, { is_available: v })}
+                    label=""
+                  />
+                </div>
+
+                {/* Start time */}
+                <input
+                  type="time"
+                  value={slot.start_time}
+                  disabled={!slot.is_available}
+                  onChange={(e) => update(slot.day_of_week, { start_time: e.target.value })}
+                  className="w-24 text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-40 disabled:bg-gray-50"
+                />
+
+                {/* End time */}
+                <input
+                  type="time"
+                  value={slot.end_time}
+                  disabled={!slot.is_available}
+                  onChange={(e) => update(slot.day_of_week, { end_time: e.target.value })}
+                  className="w-24 text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-40 disabled:bg-gray-50"
+                />
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs text-gray-400">
+            Os horários definem quando a IA pode oferecer agendamentos para este profissional.
+            Conflitos com consultas já marcadas são excluídos automaticamente.
+          </p>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+            <Button onClick={save} loading={saving}>Salvar agenda</Button>
+          </div>
+        </div>
+      )}
+    </Modal>
   )
 }
 
@@ -96,8 +277,8 @@ function ServiceCard({
 // ─── Professional card ────────────────────────────────────────────────────────
 
 function ProfessionalCard({
-  p, onEdit, onDelete,
-}: { p: Professional; onEdit: () => void; onDelete: () => void }) {
+  p, onEdit, onDelete, onSchedule,
+}: { p: Professional; onEdit: () => void; onDelete: () => void; onSchedule: () => void }) {
   return (
     <Card className={!p.is_active ? 'opacity-60' : ''}>
       <div className="flex items-center gap-3 mb-3">
@@ -129,6 +310,9 @@ function ProfessionalCard({
       )}
 
       <div className="flex justify-end gap-1 mt-3 pt-2 border-t border-gray-100">
+        <Button variant="ghost" size="sm" onClick={onSchedule} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50">
+          <CalendarDays className="h-3 w-3" /> Agenda
+        </Button>
         <Button variant="ghost" size="sm" onClick={onEdit}>
           <Edit3 className="h-3 w-3" /> Editar
         </Button>
@@ -178,6 +362,9 @@ export default function ServicosPage() {
   const [profModal, setProfModal]   = useState(false)
   const [profForm, setProfForm]     = useState<Partial<Professional>>(defaultProfessional)
   const [profSaving, setProfSaving] = useState(false)
+
+  // Availability modal
+  const [schedProfessional, setSchedProfessional] = useState<Professional | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -350,6 +537,7 @@ export default function ServicosPage() {
                 key={p.id} p={p}
                 onEdit={() => openEditProfessional(p)}
                 onDelete={() => handleDeleteProfessional(p)}
+                onSchedule={() => setSchedProfessional(p)}
               />
             ))}
           </div>
@@ -464,6 +652,15 @@ export default function ServicosPage() {
           </div>
         </div>
       </Modal>
+
+      {/* ── Availability Modal ─────────────────────────────────────────────── */}
+      {schedProfessional && (
+        <AvailabilityModal
+          professional={schedProfessional}
+          open={!!schedProfessional}
+          onClose={() => setSchedProfessional(null)}
+        />
+      )}
     </div>
   )
 }
