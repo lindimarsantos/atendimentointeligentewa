@@ -28,6 +28,7 @@ import type {
   PromptTemplate,
   BusinessHour,
   ChannelSettings,
+  WhatsAppChannel,
   TenantSettings,
   Tenant,
   HandoffEntry,
@@ -411,6 +412,27 @@ export async function updateBusinessHours(hours: BusinessHour[]): Promise<void> 
   await rpc('rpc_update_business_hours', {
     p_tenant_id: getTenantId(),
     p_hours: hours,
+  })
+}
+
+export async function getWhatsAppChannel(): Promise<WhatsAppChannel | null> {
+  return rpc('rpc_get_whatsapp_channel', { p_tenant_id: getTenantId() })
+}
+
+export async function updateWhatsAppChannel(data: {
+  instance_id: string
+  zapi_token: string
+  phone_number?: string
+  webhook_url?: string
+  is_active?: boolean
+}): Promise<void> {
+  await rpc('rpc_update_whatsapp_channel', {
+    p_tenant_id:    getTenantId(),
+    p_instance_id:  data.instance_id,
+    p_zapi_token:   data.zapi_token,
+    p_phone_number: data.phone_number ?? null,
+    p_webhook_url:  data.webhook_url ?? null,
+    p_is_active:    data.is_active ?? true,
   })
 }
 

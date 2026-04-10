@@ -358,6 +358,23 @@ export interface ChannelSettings {
   updated_at: string
 }
 
+// ─── WhatsApp Channel (Z-API) ─────────────────────────────────────────────────
+
+export interface WhatsAppChannel {
+  id: string
+  tenant_id: string
+  type: string
+  name: string
+  is_active: boolean
+  external_account_id: string | null
+  webhook_url: string | null
+  config_jsonb: {
+    zapi_token?: string
+    phone_number?: string
+    [key: string]: unknown
+  }
+}
+
 // ─── Business Contact Info ────────────────────────────────────────────────────
 
 export interface BusinessContact {
