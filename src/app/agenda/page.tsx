@@ -347,7 +347,15 @@ export default function AgendaPage() {
   const [weekAppts, setWeekAppts]       = useState<Appointment[]>([])
   const [loading, setLoading]           = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [profFilter, setProfFilter]     = useState('')
+  const [professionals, setProfessionals] = useState<Professional[]>([])
   const [newModal, setNewModal]         = useState(false)
+
+  useEffect(() => {
+    listProfessionals()
+      .then((ps) => setProfessionals(ps.filter((p) => p.is_active)))
+      .catch(() => {})
+  }, [])
 
   const loadWeek = useCallback(() => {
     const from = format(weekStart, 'yyyy-MM-dd')
@@ -380,24 +388,27 @@ export default function AgendaPage() {
   // Week day strip
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart])
 
-  // Count per day
+  // Count per day (respects professional filter)
   const countByDay = useMemo(() => {
     const counts: Record<string, number> = {}
-    weekAppts.forEach((a) => {
-      const d = getDateStr(a)
-      if (d) counts[d] = (counts[d] ?? 0) + 1
-    })
+    weekAppts
+      .filter((a) => !profFilter || a.professional_id === profFilter)
+      .forEach((a) => {
+        const d = getDateStr(a)
+        if (d) counts[d] = (counts[d] ?? 0) + 1
+      })
     return counts
-  }, [weekAppts])
+  }, [weekAppts, profFilter])
 
-  // Appointments for selected day, filtered by status
+  // Appointments for selected day, filtered by status and professional
   const dayAppts = useMemo(() => {
     const dayStr = format(selectedDay, 'yyyy-MM-dd')
     return weekAppts
       .filter((a) => getDateStr(a) === dayStr)
       .filter((a) => statusFilter === 'all' || a.status === statusFilter)
+      .filter((a) => !profFilter || a.professional_id === profFilter)
       .sort((a, b) => getTime(a).localeCompare(getTime(b)))
-  }, [weekAppts, selectedDay, statusFilter])
+  }, [weekAppts, selectedDay, statusFilter, profFilter])
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
@@ -411,7 +422,10 @@ export default function AgendaPage() {
     }
   }
 
-  const totalDay   = weekAppts.filter((a) => getDateStr(a) === format(selectedDay, 'yyyy-MM-dd')).length
+  const totalDay   = weekAppts.filter((a) =>
+    getDateStr(a) === format(selectedDay, 'yyyy-MM-dd') &&
+    (!profFilter || a.professional_id === profFilter)
+  ).length
   const weekLabel  = `${format(weekStart, "dd/MM")} – ${format(addDays(weekStart, 6), "dd/MM/yyyy")}`
 
   return (
@@ -487,21 +501,39 @@ export default function AgendaPage() {
         })}
       </div>
 
-      {/* Status filter */}
-      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
-        {STATUS_FILTERS.map((f) => (
-          <button
-            key={f.id}
-            onClick={() => setStatusFilter(f.id)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              statusFilter === f.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Status filter */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setStatusFilter(f.id)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                statusFilter === f.id
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Professional filter */}
+        {professionals.length > 0 && (
+          <select
+            value={profFilter}
+            onChange={(e) => setProfFilter(e.target.value)}
+            className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white text-gray-700
+                       focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
           >
-            {f.label}
-          </button>
-        ))}
+            <option value="">Todos os profissionais</option>
+            {professionals.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Appointment list */}
