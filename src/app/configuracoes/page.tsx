@@ -9,9 +9,10 @@ import { MensagensCanal }     from '@/components/modules/Configuracoes/Mensagens
 import { RegrasComportamento }from '@/components/modules/Configuracoes/RegrasComportamento'
 import { Voz }                from '@/components/modules/Configuracoes/Voz'
 import { GeralTenant }        from '@/components/modules/Configuracoes/GeralTenant'
+import { Lembretes }          from '@/components/modules/Configuracoes/Lembretes'
 import {
   User, Code2, Database, MessageSquare,
-  ShieldCheck, Mic, Settings,
+  ShieldCheck, Mic, Settings, Bell,
 } from 'lucide-react'
 
 const tabs = [
@@ -20,6 +21,7 @@ const tabs = [
   { id: 'negocio',     label: 'Dados do Negócio',       icon: Database      },
   { id: 'mensagens',   label: 'Mensagens do Canal',     icon: MessageSquare },
   { id: 'regras',      label: 'Regras de Comportamento',icon: ShieldCheck   },
+  { id: 'lembretes',   label: 'Lembretes',              icon: Bell          },
   { id: 'voz',         label: 'Voz (ElevenLabs)',       icon: Mic           },
   { id: 'geral',       label: 'Configurações Gerais',   icon: Settings      },
 ]
@@ -44,6 +46,7 @@ export default function ConfiguracoesPage() {
         {tab === 'negocio'   && <DadosNegocio />}
         {tab === 'mensagens' && <MensagensCanal />}
         {tab === 'regras'    && <RegrasComportamento />}
+        {tab === 'lembretes' && <Lembretes />}
         {tab === 'voz'       && <Voz />}
         {tab === 'geral'     && <GeralTenant />}
       </div>

@@ -28,6 +28,7 @@ import type {
   ChannelSettings,
   TenantSettings,
   Tenant,
+  ReminderRule,
   HandoffRule,
   SlaRule,
   FeatureFlag,
@@ -400,6 +401,39 @@ export async function updateTenantSettings(data: Partial<TenantSettings>): Promi
 
 export async function deleteHandoffRule(id: string): Promise<void> {
   await rpc('rpc_delete_handoff_rule', { p_tenant_id: getTenantId(), p_id: id })
+}
+
+// ─── Ops: Reminder Rules ─────────────────────────────────────────────────────
+
+export async function listReminderRules(): Promise<ReminderRule[]> {
+  return rpcList('rpc_list_reminder_rules', { p_tenant_id: getTenantId() })
+}
+
+export async function upsertReminderRule(data: {
+  id?: string
+  name: string
+  trigger_type: string
+  hours_before: number
+  template_id?: string
+  is_active: boolean
+  prep_notes?: string
+  include_recommendations?: boolean
+}): Promise<void> {
+  await rpc('rpc_upsert_reminder_rule', {
+    p_tenant_id:              getTenantId(),
+    p_id:                     data.id ?? null,
+    p_name:                   data.name,
+    p_trigger_type:           data.trigger_type,
+    p_hours_before:           data.hours_before,
+    p_template_id:            data.template_id ?? null,
+    p_is_active:              data.is_active,
+    p_prep_notes:             data.prep_notes ?? '',
+    p_include_recommendations: data.include_recommendations ?? false,
+  })
+}
+
+export async function deleteReminderRule(id: string): Promise<void> {
+  await rpc('rpc_delete_reminder_rule', { p_tenant_id: getTenantId(), p_id: id })
 }
 
 export async function deleteSlaRule(id: string): Promise<void> {

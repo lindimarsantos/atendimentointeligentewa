@@ -371,6 +371,25 @@ export interface TenantSettings {
   updated_at: string
 }
 
+// ─── Ops: Reminder Rules ─────────────────────────────────────────────────────
+
+export interface ReminderRule {
+  id: string
+  tenant_id: string
+  name: string
+  trigger_type: string
+  hours_before?: number
+  template_id?: string
+  is_active: boolean
+  config_jsonb: {
+    prep_notes?: string
+    include_recommendations?: boolean
+    [key: string]: unknown
+  }
+  created_at: string
+  updated_at: string
+}
+
 // ─── Config: Handoff Rules ───────────────────────────────────────────────────
 
 export type HandoffTriggerType = 'keyword' | 'sentiment' | 'schedule' | 'attempts'
