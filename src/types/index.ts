@@ -99,7 +99,11 @@ export interface Professional {
   name: string
   specialty?: string
   bio?: string
+  email?: string
+  phone?: string
+  color?: string
   is_active: boolean
+  updated_at?: string
 }
 
 // ─── Campaigns / Templates ───────────────────────────────────────────────────
