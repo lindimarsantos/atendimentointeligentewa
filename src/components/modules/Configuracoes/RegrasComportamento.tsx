@@ -9,13 +9,13 @@ import { Toggle } from '@/components/ui/Toggle'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import {
-  listHandoffRules, upsertHandoffRule,
-  listSlaRules, upsertSlaRule,
-  listFeatureFlags, updateFeatureFlag,
+  listHandoffRules, upsertHandoffRule, deleteHandoffRule,
+  listSlaRules, upsertSlaRule, deleteSlaRule,
+  listFeatureFlags, updateFeatureFlag, deleteFeatureFlag,
 } from '@/lib/api'
 import type { HandoffRule, SlaRule, FeatureFlag } from '@/types'
 import { toast } from '@/components/ui/Toast'
-import { AlertCircle, Plus, Edit3, Shield, Clock, Flag } from 'lucide-react'
+import { AlertCircle, Plus, Edit3, Trash2, Shield, Clock, Flag } from 'lucide-react'
 import { fmtSeconds } from '@/lib/utils'
 import { Tabs } from '@/components/ui/Tabs'
 
@@ -32,6 +32,7 @@ function HandoffRulesSection() {
   const [rules, setRules] = useState<HandoffRule[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<Partial<HandoffRule>>({
     rule_name: '', trigger_type: 'keyword', target_role: 'agent', is_active: true,
@@ -42,6 +43,20 @@ function HandoffRulesSection() {
     listHandoffRules().then(setRules).catch(() => null).finally(() => setLoading(false))
   }
   useEffect(load, [])
+
+  const handleDelete = async (r: HandoffRule) => {
+    if (!confirm(`Excluir a regra "${r.rule_name}"?`)) return
+    setDeletingId(r.id)
+    try {
+      await deleteHandoffRule(r.id)
+      toast('Regra excluída')
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao excluir', 'error')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const openNew = () => {
     setForm({ rule_name: '', trigger_type: 'keyword', target_role: 'agent', is_active: true, trigger_config_jsonb: {} })
@@ -101,6 +116,14 @@ function HandoffRulesSection() {
               </Badge>
               <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
                 <Edit3 className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost" size="sm"
+                onClick={() => handleDelete(r)}
+                disabled={deletingId === r.id}
+                className="text-red-500 hover:text-red-700"
+              >
+                <Trash2 className="h-3 w-3" />
               </Button>
             </li>
           ))}
@@ -185,6 +208,7 @@ function SlaSection() {
   const [rules, setRules] = useState<SlaRule[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<Partial<SlaRule>>({
     priority: '', first_response_seconds: 300, resolution_seconds: 3600,
@@ -195,6 +219,20 @@ function SlaSection() {
     listSlaRules().then(setRules).catch(() => null).finally(() => setLoading(false))
   }
   useEffect(load, [])
+
+  const handleDelete = async (r: SlaRule) => {
+    if (!confirm(`Excluir a regra SLA "${r.priority}"?`)) return
+    setDeletingId(r.id)
+    try {
+      await deleteSlaRule(r.id)
+      toast('SLA excluído')
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao excluir', 'error')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const openNew = () => {
     setForm({ priority: '', first_response_seconds: 300, resolution_seconds: 3600, business_hours_only: true, is_active: true })
@@ -259,9 +297,19 @@ function SlaSection() {
                     </Badge>
                   </td>
                   <td className="py-2">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
-                      <Edit3 className="h-3 w-3" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+                        <Edit3 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost" size="sm"
+                        onClick={() => handleDelete(r)}
+                        disabled={deletingId === r.id}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -343,6 +391,20 @@ function FeatureFlagsSection() {
     }
   }
 
+  const handleDelete = async (flag: FeatureFlag) => {
+    if (!confirm(`Excluir a flag "${flag.code}"?`)) return
+    setSavingCode(flag.code)
+    try {
+      await deleteFeatureFlag(flag.code)
+      toast(`Flag "${flag.code}" excluída`)
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao excluir', 'error')
+    } finally {
+      setSavingCode(null)
+    }
+  }
+
   const handleCreate = async () => {
     const code = newCode.trim().toLowerCase().replace(/\s+/g, '_')
     if (!code) { toast('Informe o código da flag', 'error'); return }
@@ -390,11 +452,21 @@ function FeatureFlagsSection() {
                   </p>
                 )}
               </div>
-              <Toggle
-                checked={flag.is_enabled}
-                onChange={(v) => handleToggle(flag, v)}
-                disabled={savingCode === flag.code}
-              />
+              <div className="flex items-center gap-2">
+                <Toggle
+                  checked={flag.is_enabled}
+                  onChange={(v) => handleToggle(flag, v)}
+                  disabled={savingCode === flag.code}
+                />
+                <Button
+                  variant="ghost" size="sm"
+                  onClick={() => handleDelete(flag)}
+                  disabled={savingCode === flag.code}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </li>
           ))}
         </ul>

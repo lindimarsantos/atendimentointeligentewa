@@ -389,6 +389,18 @@ export async function updateTenantSettings(data: Partial<TenantSettings>): Promi
   })
 }
 
+export async function deleteHandoffRule(id: string): Promise<void> {
+  await rpc('rpc_delete_handoff_rule', { p_tenant_id: getTenantId(), p_id: id })
+}
+
+export async function deleteSlaRule(id: string): Promise<void> {
+  await rpc('rpc_delete_sla_rule', { p_tenant_id: getTenantId(), p_id: id })
+}
+
+export async function deleteFeatureFlag(code: string): Promise<void> {
+  await rpc('rpc_delete_feature_flag', { p_tenant_id: getTenantId(), p_code: code })
+}
+
 export async function listHandoffRules(): Promise<HandoffRule[]> {
   return rpcList('rpc_list_handoff_rules', { p_tenant_id: getTenantId() })
 }
