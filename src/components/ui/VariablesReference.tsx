@@ -11,9 +11,10 @@ const GROUPS = [
     bg: 'bg-blue-50',
     badge: 'bg-blue-100 text-blue-700',
     vars: [
-      { name: 'cliente_nome',     desc: 'Nome completo do cliente' },
-      { name: 'cliente_telefone', desc: 'Telefone / WhatsApp' },
-      { name: 'cliente_email',    desc: 'E-mail (quando disponível)' },
+      { name: 'cliente_nome',          desc: 'Nome completo do cliente' },
+      { name: 'cliente_primeiro_nome', desc: 'Apenas o primeiro nome' },
+      { name: 'cliente_telefone',      desc: 'Telefone / WhatsApp' },
+      { name: 'cliente_email',         desc: 'E-mail (quando disponível)' },
     ],
   },
   {
