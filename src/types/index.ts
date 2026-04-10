@@ -371,6 +371,26 @@ export interface TenantSettings {
   updated_at: string
 }
 
+// ─── AI: Handoff Queue ───────────────────────────────────────────────────────
+
+export interface HandoffEntry {
+  id: string
+  tenant_id: string
+  conversation_id: string
+  reason_text?: string
+  target_role?: string
+  status: 'pending' | 'accepted' | 'resolved' | 'rejected'
+  accepted_at?: string
+  resolved_at?: string
+  created_at: string
+  conversation_status?: string
+  customer_id?: string
+  customer_name?: string
+  customer_phone?: string
+  last_message?: string
+  conversation_updated_at?: string
+}
+
 // ─── Ops: Reminder Rules ─────────────────────────────────────────────────────
 
 export interface ReminderRule {

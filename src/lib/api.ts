@@ -28,6 +28,7 @@ import type {
   ChannelSettings,
   TenantSettings,
   Tenant,
+  HandoffEntry,
   ReminderRule,
   HandoffRule,
   SlaRule,
@@ -401,6 +402,30 @@ export async function updateTenantSettings(data: Partial<TenantSettings>): Promi
 
 export async function deleteHandoffRule(id: string): Promise<void> {
   await rpc('rpc_delete_handoff_rule', { p_tenant_id: getTenantId(), p_id: id })
+}
+
+// ─── AI: Handoff Queue ───────────────────────────────────────────────────────
+
+export async function listHandoffQueue(status?: string): Promise<HandoffEntry[]> {
+  const { data, error } = await supabase.rpc('rpc_list_handoff_queue', {
+    p_tenant_id: getTenantId(),
+    p_status:    status ?? null,
+  })
+  if (error) throw error
+  return (data as HandoffEntry[] | null) ?? []
+}
+
+export async function updateHandoffStatus(
+  handoffId: string,
+  status: 'accepted' | 'resolved' | 'rejected',
+  resolutionNote?: string,
+): Promise<void> {
+  await rpc('rpc_update_handoff_status', {
+    p_tenant_id:       getTenantId(),
+    p_handoff_id:      handoffId,
+    p_status:          status,
+    p_resolution_note: resolutionNote ?? null,
+  })
 }
 
 // ─── Ops: Reminder Rules ─────────────────────────────────────────────────────
