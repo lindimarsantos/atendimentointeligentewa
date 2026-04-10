@@ -126,11 +126,16 @@ function HandoffRulesSection() {
                 { value: 'attempts',  label: 'Tentativas'    },
               ]}
             />
-            <Input
+            <Select
               label="Perfil alvo"
               value={form.target_role ?? 'agent'}
               onChange={(e) => setForm((p) => ({ ...p, target_role: e.target.value }))}
-              placeholder="agent"
+              options={[
+                { value: 'agent',   label: 'Agente'          },
+                { value: 'manager', label: 'Gerente'         },
+                { value: 'admin',   label: 'Administrador'   },
+                { value: 'owner',   label: 'Proprietário'    },
+              ]}
             />
           </div>
           {form.trigger_type === 'keyword' && (
@@ -315,10 +320,15 @@ function FeatureFlagsSection() {
   const [flags, setFlags] = useState<FeatureFlag[]>([])
   const [loading, setLoading] = useState(true)
   const [savingCode, setSavingCode] = useState<string | null>(null)
+  const [modal, setModal] = useState(false)
+  const [newCode, setNewCode] = useState('')
+  const [creating, setCreating] = useState(false)
 
-  useEffect(() => {
+  const load = () => {
     listFeatureFlags().then(setFlags).catch(() => null).finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(load, [])
 
   const handleToggle = async (flag: FeatureFlag, value: boolean) => {
     setSavingCode(flag.code)
@@ -333,6 +343,23 @@ function FeatureFlagsSection() {
     }
   }
 
+  const handleCreate = async () => {
+    const code = newCode.trim().toLowerCase().replace(/\s+/g, '_')
+    if (!code) { toast('Informe o código da flag', 'error'); return }
+    setCreating(true)
+    try {
+      await updateFeatureFlag(code, false)
+      toast(`Flag "${code}" criada`)
+      setModal(false)
+      setNewCode('')
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro', 'error')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   if (loading)
     return (
       <div className="h-20 flex items-center justify-center">
@@ -340,29 +367,55 @@ function FeatureFlagsSection() {
       </div>
     )
 
-  if (flags.length === 0)
-    return <p className="text-sm text-gray-400 text-center py-6">Nenhuma feature flag</p>
-
   return (
-    <ul className="space-y-3">
-      {flags.map((flag) => (
-        <li key={flag.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900 font-mono">{flag.code}</p>
-            {flag.config_jsonb && (
-              <p className="text-xs text-gray-400 mt-0.5">
-                {JSON.stringify(flag.config_jsonb)}
-              </p>
-            )}
-          </div>
-          <Toggle
-            checked={flag.is_enabled}
-            onChange={(v) => handleToggle(flag, v)}
-            disabled={savingCode === flag.code}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">{flags.length} flags</p>
+        <Button variant="secondary" size="sm" onClick={() => { setNewCode(''); setModal(true) }}>
+          <Plus className="h-3.5 w-3.5" /> Nova flag
+        </Button>
+      </div>
+
+      {flags.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-6">Nenhuma feature flag cadastrada</p>
+      ) : (
+        <ul className="space-y-3">
+          {flags.map((flag) => (
+            <li key={flag.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900 font-mono">{flag.code}</p>
+                {flag.config_jsonb && Object.keys(flag.config_jsonb).length > 0 && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {JSON.stringify(flag.config_jsonb)}
+                  </p>
+                )}
+              </div>
+              <Toggle
+                checked={flag.is_enabled}
+                onChange={(v) => handleToggle(flag, v)}
+                disabled={savingCode === flag.code}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <Modal open={modal} onClose={() => setModal(false)} title="Nova feature flag">
+        <div className="space-y-4">
+          <Input
+            label="Código da flag"
+            value={newCode}
+            onChange={(e) => setNewCode(e.target.value)}
+            placeholder="ex: agendamento_automatico, ia_sugestoes"
+            hint="Use snake_case. A flag será criada desabilitada por padrão."
           />
-        </li>
-      ))}
-    </ul>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setModal(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} loading={creating}>Criar flag</Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
   )
 }
 
