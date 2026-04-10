@@ -127,8 +127,10 @@ export interface MessageTemplate {
   category: string
   language: string
   status: 'approved' | 'pending' | 'rejected'
+  template_type: 'official' | 'zapi'
   components: unknown[]
   created_at: string
+  updated_at?: string
 }
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────

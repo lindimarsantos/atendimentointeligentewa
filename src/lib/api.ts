@@ -245,13 +245,14 @@ export async function listMessageTemplates(): Promise<MessageTemplate[]> {
 
 export async function upsertMessageTemplate(data: Partial<MessageTemplate> & { components: unknown[] }): Promise<void> {
   await rpc('rpc_upsert_message_template', {
-    p_tenant_id:  getTenantId(),
-    p_id:         data.id ?? null,
-    p_name:       data.name,
-    p_category:   data.category ?? 'utility',
-    p_language:   data.language ?? 'pt_BR',
-    p_components: data.components,
-    p_status:     data.status ?? 'pending',
+    p_tenant_id:     getTenantId(),
+    p_id:            data.id ?? null,
+    p_name:          data.name,
+    p_category:      data.category ?? 'utility',
+    p_language:      data.language ?? 'pt_BR',
+    p_components:    data.components,
+    p_status:        data.status ?? null,
+    p_template_type: data.template_type ?? 'official',
   })
 }
 

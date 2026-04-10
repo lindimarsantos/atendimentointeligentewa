@@ -45,7 +45,7 @@ function TrendIcon({ value }: { value: number }) {
 // ─── KPI Card ────────────────────────────────────────────────────────────────
 
 function KpiCard({
-  label, value, sub, icon: Icon, color, trend, alert,
+  label, value, sub, icon: Icon, color, trend, alert, href,
 }: {
   label: string
   value: string | number
@@ -54,9 +54,10 @@ function KpiCard({
   color: string
   trend?: number
   alert?: boolean
+  href?: string
 }) {
-  return (
-    <Card className={alert ? 'border-red-200 bg-red-50/40' : ''}>
+  const inner = (
+    <Card className={`${alert ? 'border-red-200 bg-red-50/40' : ''} ${href ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <p className="text-xs text-gray-500 mb-1 truncate">{label}</p>
@@ -74,6 +75,7 @@ function KpiCard({
       </div>
     </Card>
   )
+  return href ? <Link href={href}>{inner}</Link> : inner
 }
 
 // ─── Conversation row ────────────────────────────────────────────────────────
@@ -266,6 +268,7 @@ export default function VisaoGeralPage() {
           icon={Users}
           color="bg-brand-600"
           trend={s?.customers?.new_week ?? 0}
+          href="/clientes"
         />
         <KpiCard
           label="Conversas abertas"
@@ -273,6 +276,7 @@ export default function VisaoGeralPage() {
           sub={`${s?.conversations?.total ?? 0} total`}
           icon={MessageSquare}
           color="bg-blue-500"
+          href="/atendimento?status=open"
         />
         <KpiCard
           label="Aguardando humano"
@@ -281,6 +285,7 @@ export default function VisaoGeralPage() {
           icon={Clock}
           color={wh > 0 ? 'bg-orange-500' : 'bg-green-500'}
           alert={wh > 0}
+          href="/atendimento?status=waiting_human"
         />
         <KpiCard
           label="Resolvidas hoje"
@@ -288,6 +293,7 @@ export default function VisaoGeralPage() {
           sub={`tempo médio: ${fmtSeconds(s?.performance?.avg_resolution_seconds ?? 0)}`}
           icon={CheckCircle2}
           color="bg-green-500"
+          href="/atendimento?status=resolved"
         />
         <KpiCard
           label="Agendamentos hoje"
@@ -295,6 +301,7 @@ export default function VisaoGeralPage() {
           sub={`${s?.appointments?.confirmed ?? 0} confirmados`}
           icon={CalendarCheck}
           color="bg-purple-500"
+          href="/agenda"
         />
         <KpiCard
           label="Taxa de resolução IA"
@@ -303,6 +310,7 @@ export default function VisaoGeralPage() {
           icon={Bot}
           color="bg-indigo-500"
           trend={botRate > 0.6 ? 1 : botRate < 0.4 ? -1 : 0}
+          href="/observabilidade"
         />
       </div>
 

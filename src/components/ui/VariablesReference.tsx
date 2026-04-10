@@ -97,9 +97,9 @@ export function VariablesReference({ defaultOpen = false }: Props) {
 
       {/* Body */}
       {open && (
-        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white">
+        <div className="p-3 grid grid-cols-1 min-[480px]:grid-cols-2 gap-4 bg-white">
           {GROUPS.map((group) => (
-            <div key={group.label} className={`rounded-lg p-3 ${group.bg}`}>
+            <div key={group.label} className={`rounded-lg p-3 min-w-0 ${group.bg}`}>
               <p className="text-xs font-semibold text-gray-600 mb-2">{group.label}</p>
               <div className="space-y-1.5">
                 {group.vars.map((v) => (
@@ -110,11 +110,13 @@ export function VariablesReference({ defaultOpen = false }: Props) {
                     className="w-full flex items-center justify-between gap-2 group
                                hover:opacity-80 transition-opacity text-left"
                   >
-                    <div className="min-w-0">
-                      <span className={`inline-block font-mono text-xs px-1.5 py-0.5 rounded ${group.badge}`}>
-                        {`{{${v.name}}}`}
-                      </span>
-                      <span className="ml-1.5 text-xs text-gray-500">{v.desc}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className={`inline-block font-mono text-xs px-1.5 py-0.5 rounded whitespace-nowrap ${group.badge}`}>
+                          {`{{${v.name}}}`}
+                        </span>
+                        <span className="text-xs text-gray-500 leading-tight">{v.desc}</span>
+                      </div>
                     </div>
                     <span className="shrink-0 text-gray-400">
                       {copied === v.name

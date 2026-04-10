@@ -204,7 +204,10 @@ function TemplateCard({
       </div>
 
       <h3 className="text-sm font-semibold text-gray-900 mb-1">{t.name}</h3>
-      <p className="text-xs text-gray-400 mb-2">{cat} · {t.language}</p>
+      <p className="text-xs text-gray-400 mb-2">
+        {cat} · {t.language}
+        {t.template_type === 'zapi' && <span className="ml-1 text-indigo-500 font-medium">· Z-API</span>}
+      </p>
 
       {body && (
         <p className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2.5 line-clamp-3 mb-2 whitespace-pre-line">
@@ -224,7 +227,12 @@ function TemplateCard({
 // ─── Default forms ────────────────────────────────────────────────────────────
 
 const defaultCampaign: Partial<Campaign> = { name: '', status: 'draft', template_id: undefined, scheduled_at: undefined }
-const defaultTemplate = { name: '', category: 'utility', language: 'pt_BR', header: '', body: '', footer: '' }
+const TEMPLATE_TYPES = [
+  { value: 'zapi',     label: 'Z-API (sem aprovação)'      },
+  { value: 'official', label: 'API Oficial (requer aprovação Meta)' },
+]
+
+const defaultTemplate = { name: '', category: 'utility', language: 'pt_BR', template_type: 'zapi', header: '', body: '', footer: '' }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
@@ -309,12 +317,13 @@ export default function CampanhasPage() {
   const openEditTemplate = (t: MessageTemplate) => {
     setTmplId(t.id)
     setTmplForm({
-      name:     t.name,
-      category: t.category,
-      language: t.language,
-      header:   extractComponent(t.components, 'HEADER'),
-      body:     extractComponent(t.components, 'BODY'),
-      footer:   extractComponent(t.components, 'FOOTER'),
+      name:          t.name,
+      category:      t.category,
+      language:      t.language,
+      template_type: t.template_type ?? 'official',
+      header:        extractComponent(t.components, 'HEADER'),
+      body:          extractComponent(t.components, 'BODY'),
+      footer:        extractComponent(t.components, 'FOOTER'),
     })
     setTmplModal(true)
   }
@@ -325,11 +334,12 @@ export default function CampanhasPage() {
     setTmplSaving(true)
     try {
       await upsertMessageTemplate({
-        id:         tmplId,
-        name:       tmplForm.name,
-        category:   tmplForm.category,
-        language:   tmplForm.language,
-        components: buildComponents(tmplForm.header, tmplForm.body, tmplForm.footer),
+        id:            tmplId,
+        name:          tmplForm.name,
+        category:      tmplForm.category,
+        language:      tmplForm.language,
+        template_type: tmplForm.template_type as 'zapi' | 'official',
+        components:    buildComponents(tmplForm.header, tmplForm.body, tmplForm.footer),
       })
       toast(tmplId ? 'Template atualizado' : 'Template criado')
       setTmplModal(false)
@@ -476,6 +486,13 @@ export default function CampanhasPage() {
               placeholder="Ex: confirmacao_agendamento"
               hint="Use apenas letras minúsculas, números e underscores"
             />
+            <Select
+              label="Tipo de template"
+              value={tmplForm.template_type}
+              onChange={(e) => setTmplForm((p) => ({ ...p, template_type: e.target.value }))}
+              options={TEMPLATE_TYPES}
+              hint={tmplForm.template_type === 'zapi' ? 'Ativado imediatamente, sem aprovação' : 'Requer aprovação da Meta (WhatsApp Business)'}
+            />
             <div className="grid grid-cols-2 gap-3">
               <Select
                 label="Categoria"
@@ -510,9 +527,9 @@ export default function CampanhasPage() {
               onChange={(e) => setTmplForm((p) => ({ ...p, footer: e.target.value }))}
               placeholder="Ex: Responda SAIR para cancelar"
             />
-            {!tmplId && (
+            {tmplForm.template_type === 'official' && (
               <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-                Templates criados aqui ficam com status <strong>Pendente</strong> até serem aprovados pelo WhatsApp Business.
+                Templates <strong>Oficiais</strong> ficam com status <strong>Pendente</strong> até aprovação pela Meta (WhatsApp Business). Use o tipo <strong>Z-API</strong> para ativar imediatamente.
               </p>
             )}
             <div className="flex justify-end gap-2 pt-1">
