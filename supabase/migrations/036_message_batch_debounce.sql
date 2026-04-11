@@ -1,15 +1,22 @@
 -- ============================================================
--- Migration 036: Message batch debouncing
+-- Migration 036: Message batch debouncing (v2)
 --
 -- Prevents multiple AI responses when user sends messages
 -- in quick succession (line breaks, multiple short messages).
 --
--- rpc_take_conversation_batch:
---   Called after a wait period. Returns the combined text of
---   all recent inbound messages if this message is the latest
---   (i.e., it should be the one to trigger AI processing).
---   Returns should_process=false if a newer message exists,
---   meaning this execution should stop.
+-- Key fix: the batch window is anchored to the CURRENT message's
+-- creation time, not to NOW(). This prevents new messages sent
+-- during the wait period from invalidating the original batch.
+--
+-- Example:
+--   t=0.0s  M1 arrives, M2 arrives, M3 arrives
+--   t=0.0s  3 n8n executions start, each waits 4s
+--   t=2.0s  User sends M4 (new message during wait)
+--   t=4.0s  Batch check runs:
+--     M1: latest in [t=0.0 → t=4.0] = M3 → should_process=false
+--     M2: latest in [t=0.2 → t=4.2] = M3 → should_process=false
+--     M3: latest in [t=0.4 → t=4.4] = M3 → should_process=true ✓
+--     M4 starts its own new batch cycle
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.rpc_take_conversation_batch(
@@ -23,20 +30,36 @@ SECURITY DEFINER
 SET search_path = public, messaging
 AS $$
 DECLARE
-  v_latest_message_id uuid;
-  v_combined_text     text;
-  v_message_count     int;
+  v_message_created_at timestamptz;
+  v_latest_message_id  uuid;
+  v_combined_text      text;
+  v_message_count      int;
 BEGIN
-  -- Find the latest inbound message within the batch window
+  -- Get the creation time of this specific message
+  SELECT created_at INTO v_message_created_at
+  FROM messaging.messages
+  WHERE id = p_message_id;
+
+  IF v_message_created_at IS NULL THEN
+    RETURN json_build_object(
+      'should_process', false,
+      'combined_text',  NULL,
+      'message_count',  0
+    );
+  END IF;
+
+  -- Find the latest inbound message in the window anchored to THIS message's creation time
+  -- Window: from this message's creation → +batch_window seconds
   SELECT id INTO v_latest_message_id
   FROM messaging.messages
   WHERE conversation_id = p_conversation_id
     AND direction       = 'inbound'
-    AND created_at      >= NOW() - (p_batch_window_seconds || ' seconds')::interval
+    AND created_at      BETWEEN v_message_created_at
+                            AND v_message_created_at + (p_batch_window_seconds || ' seconds')::interval
   ORDER BY created_at DESC
   LIMIT 1;
 
-  -- If this is not the latest message, a newer one will handle the batch
+  -- If this message is not the latest in its own window, stop
   IF v_latest_message_id IS DISTINCT FROM p_message_id THEN
     RETURN json_build_object(
       'should_process', false,
@@ -45,7 +68,8 @@ BEGIN
     );
   END IF;
 
-  -- This is the latest — collect all recent inbound messages
+  -- This is the latest in the window — collect all messages from this batch
+  -- Look back up to batch_window seconds before this message to catch earlier messages in the burst
   SELECT
     string_agg(content_text, E'\n' ORDER BY created_at),
     COUNT(*)
@@ -53,7 +77,8 @@ BEGIN
   FROM messaging.messages
   WHERE conversation_id = p_conversation_id
     AND direction       = 'inbound'
-    AND created_at      >= NOW() - (p_batch_window_seconds || ' seconds')::interval
+    AND created_at      BETWEEN v_message_created_at - (p_batch_window_seconds || ' seconds')::interval
+                            AND v_message_created_at + (p_batch_window_seconds || ' seconds')::interval
     AND content_text    IS NOT NULL;
 
   RETURN json_build_object(
