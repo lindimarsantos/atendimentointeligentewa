@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/Input'
 import { ResumoIA } from '@/components/modules/Atendimento/ResumoIA'
 import { TimelineDecisoes } from '@/components/modules/Atendimento/TimelineDecisoes'
 import { MemoriasCliente } from '@/components/modules/Atendimento/MemoriasCliente'
+import { MemoriaRecente } from '@/components/modules/Atendimento/MemoriaRecente'
 import {
   listConversations,
   getConversationMessages,
@@ -225,6 +226,7 @@ export default function ConversaDetalhePage() {
         {/* AI Panels */}
         <div className="space-y-4">
           <ResumoIA conversationId={id} />
+          <MemoriaRecente conversationId={id} />
           <MemoriasCliente customerId={conversation.customer_id} />
           <TimelineDecisoes conversationId={id} />
         </div>
