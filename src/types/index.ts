@@ -375,6 +375,15 @@ export interface WhatsAppChannel {
   }
 }
 
+// ─── Business Profile (AI context) ───────────────────────────────────────────
+
+export interface BusinessProfile {
+  sobre?:          string   // História, missão, valores
+  posicionamento?: string   // Posicionamento e diferenciais
+  publico_alvo?:   string   // Público-alvo
+  info_ia?:        string   // Informações adicionais para a IA
+}
+
 // ─── Business Contact Info ────────────────────────────────────────────────────
 
 export interface BusinessContact {

@@ -42,6 +42,7 @@ import type {
   JobEntry,
   PredictionScore,
   RoiSummary,
+  BusinessProfile,
   BusinessContact,
   ApiKeys,
   UserTenantMembership,
@@ -627,6 +628,22 @@ export async function listPredictionScores(params: {
 
 export async function getRoiSummary(months = 6): Promise<RoiSummary> {
   return rpc('rpc_get_roi_summary', { p_tenant_id: getTenantId(), p_months: months })
+}
+
+// ─── Business Profile ────────────────────────────────────────────────────────
+
+export async function getBusinessProfile(): Promise<BusinessProfile> {
+  const data = await rpc<BusinessProfile | null>('rpc_get_business_profile', {
+    p_tenant_id: getTenantId(),
+  })
+  return data ?? {}
+}
+
+export async function updateBusinessProfile(profile: BusinessProfile): Promise<void> {
+  await rpc('rpc_update_business_profile', {
+    p_tenant_id: getTenantId(),
+    p_profile:   profile,
+  })
 }
 
 // ─── Business Contact Info ───────────────────────────────────────────────────
