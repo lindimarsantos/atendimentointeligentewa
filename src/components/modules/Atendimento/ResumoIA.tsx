@@ -1,16 +1,26 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import { getConversationSummary } from '@/lib/api'
 import type { ConversationSummary } from '@/types'
-import { fmtDateTime } from '@/lib/utils'
 import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 
+const PREVIEW_LENGTH = 180
+
+const factsLabel: Record<string, string> = {
+  cliente:      'Cliente',
+  mensagens:    'Mensagens',
+  agendamento:  'Agendamento',
+  profissional: 'Profissional',
+  horário:      'Horário',
+}
+
 export function ResumoIA({ conversationId }: { conversationId: string }) {
-  const [summary, setSummary] = useState<ConversationSummary | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState(true)
+  const [summary, setSummary]     = useState<ConversationSummary | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [expanded, setExpanded]   = useState(true)
+  const [fullText, setFullText]   = useState(false)
 
   useEffect(() => {
     getConversationSummary(conversationId)
@@ -18,6 +28,10 @@ export function ResumoIA({ conversationId }: { conversationId: string }) {
       .catch(() => null)
       .finally(() => setLoading(false))
   }, [conversationId])
+
+  const text     = summary?.summary_text ?? ''
+  const isLong   = text.length > PREVIEW_LENGTH
+  const displayed = fullText || !isLong ? text : text.slice(0, PREVIEW_LENGTH) + '…'
 
   return (
     <Card>
@@ -29,11 +43,9 @@ export function ResumoIA({ conversationId }: { conversationId: string }) {
           <Sparkles className="h-4 w-4 text-purple-500" />
           Resumo da IA
         </span>
-        {expanded ? (
-          <ChevronUp className="h-4 w-4 text-gray-400" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-gray-400" />
-        )}
+        {expanded
+          ? <ChevronUp className="h-4 w-4 text-gray-400" />
+          : <ChevronDown className="h-4 w-4 text-gray-400" />}
       </button>
 
       {expanded && (
@@ -43,46 +55,36 @@ export function ResumoIA({ conversationId }: { conversationId: string }) {
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-500" />
             </div>
           ) : !summary ? (
-            <p className="text-xs text-gray-400 text-center py-4">
-              Sem resumo disponível
-            </p>
+            <p className="text-xs text-gray-400 text-center py-4">Sem resumo disponível</p>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-gray-700 leading-relaxed">{summary.summary_text}</p>
-
+              {/* Facts strip */}
               {summary.facts_jsonb && Object.keys(summary.facts_jsonb).length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Fatos identificados
-                  </p>
-                  <ul className="space-y-1">
-                    {Object.entries(summary.facts_jsonb).map(([k, v]) => (
-                      <li key={k} className="flex items-start gap-2 text-xs">
-                        <span className="text-gray-400 font-medium shrink-0">{k}:</span>
-                        <span className="text-gray-700">{String(v)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 p-2.5 bg-purple-50 rounded-lg">
+                  {Object.entries(summary.facts_jsonb).map(([k, v]) => (
+                    <div key={k} className="col-span-1 min-w-0">
+                      <dt className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide truncate">
+                        {factsLabel[k] ?? k}
+                      </dt>
+                      <dd className="text-xs text-gray-800 truncate">{String(v)}</dd>
+                    </div>
+                  ))}
+                </dl>
               )}
 
-              {Array.isArray(summary.open_items_jsonb) && summary.open_items_jsonb.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Itens em aberto
-                  </p>
-                  <ul className="space-y-1">
-                    {summary.open_items_jsonb.map((item, i) => (
-                      <li key={i} className="flex items-start gap-1.5 text-xs text-gray-700">
-                        <span className="text-yellow-500 mt-0.5">•</span>
-                        {String(item)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {/* Narrative text (truncated) */}
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                {displayed}
+              </p>
 
-              <p className="text-xs text-gray-400">{fmtDateTime(summary.created_at)}</p>
+              {isLong && (
+                <button
+                  className="text-xs text-purple-600 hover:underline"
+                  onClick={(e) => { e.stopPropagation(); setFullText((v) => !v) }}
+                >
+                  {fullText ? 'Ver menos' : 'Ver mais'}
+                </button>
+              )}
             </div>
           )}
         </>

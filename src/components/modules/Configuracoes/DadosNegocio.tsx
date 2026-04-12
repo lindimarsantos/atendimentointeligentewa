@@ -8,17 +8,134 @@ import { Input } from '@/components/ui/Input'
 import {
   listServices, listProfessionals, getBusinessHours,
   getBusinessContact, updateBusinessContact,
+  getBusinessProfile, updateBusinessProfile,
 } from '@/lib/api'
-import type { Service, Professional, BusinessHour, BusinessContact } from '@/types'
+import type { Service, Professional, BusinessHour, BusinessContact, BusinessProfile } from '@/types'
 import { toast } from '@/components/ui/Toast'
+import { Textarea } from '@/components/ui/Input'
 import {
   ExternalLink, Scissors, Users, Clock, AlertCircle,
   MapPin, Phone, Globe, Mail, Instagram, Facebook, MessageCircle,
-  Linkedin, Music2, Star,
+  Linkedin, Music2, Star, Building2,
 } from 'lucide-react'
 import Link from 'next/link'
 
 const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+// ─── Profile form ─────────────────────────────────────────────────────────────
+
+function ProfileForm({ initial, onSaved }: {
+  initial: BusinessProfile
+  onSaved: (p: BusinessProfile) => void
+}) {
+  const [form, setForm] = useState<BusinessProfile>(initial)
+  const [saving, setSaving] = useState(false)
+
+  function field(key: keyof BusinessProfile) {
+    return {
+      value: form[key] ?? '',
+      onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) =>
+        setForm((p) => ({ ...p, [key]: e.target.value || undefined })),
+    }
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      const clean = Object.fromEntries(
+        Object.entries(form).filter(([, v]) => v && String(v).trim()),
+      ) as BusinessProfile
+      await updateBusinessProfile(clean)
+      onSaved(clean)
+      toast('Perfil da empresa salvo')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <Textarea
+        label="Sobre a empresa"
+        rows={4}
+        placeholder="Conte a história da empresa, quando foi fundada, missão, visão e valores..."
+        {...field('sobre')}
+      />
+      <Textarea
+        label="Posicionamento e diferenciais"
+        rows={3}
+        placeholder="Como a empresa se posiciona no mercado? Quais são seus principais diferenciais em relação à concorrência?"
+        {...field('posicionamento')}
+      />
+      <Textarea
+        label="Público-alvo"
+        rows={3}
+        placeholder="Descreva o perfil do cliente ideal: faixa etária, necessidades, dores, comportamento de compra..."
+        {...field('publico_alvo')}
+      />
+      <Textarea
+        label="Informações adicionais para a IA"
+        rows={4}
+        placeholder="Políticas internas, procedimentos específicos, perguntas frequentes, o que a IA deve ou não deve falar, tom de voz, etc."
+        {...field('info_ia')}
+      />
+      <div className="flex items-center justify-between pt-1">
+        <p className="text-xs text-gray-500 max-w-sm">
+          Estas informações ficam disponíveis para a IA em toda e qualquer conversa, permitindo respostas precisas sobre a empresa.
+        </p>
+        <Button onClick={save} loading={saving} size="sm">
+          Salvar
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Profile display (read-only) ──────────────────────────────────────────────
+
+const profileLabels: Record<keyof BusinessProfile, string> = {
+  sobre:          'Sobre a empresa',
+  posicionamento: 'Posicionamento e diferenciais',
+  publico_alvo:   'Público-alvo',
+  info_ia:        'Informações para a IA',
+}
+
+function ProfileDisplay({ profile, onEdit }: {
+  profile: BusinessProfile
+  onEdit: () => void
+}) {
+  const filled = (Object.keys(profileLabels) as Array<keyof BusinessProfile>)
+    .filter((k) => profile[k]?.trim())
+
+  if (filled.length === 0) {
+    return (
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-400">Nenhum dado de perfil cadastrado</p>
+        <Button variant="secondary" size="sm" onClick={onEdit}>Preencher</Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {filled.map((k) => (
+        <div key={k}>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+            {profileLabels[k]}
+          </p>
+          <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+            {profile[k]}
+          </p>
+        </div>
+      ))}
+      <div className="flex justify-end pt-1 border-t border-gray-100">
+        <Button variant="secondary" size="sm" onClick={onEdit}>Editar</Button>
+      </div>
+    </div>
+  )
+}
 
 // ─── Contact form ─────────────────────────────────────────────────────────────
 
@@ -201,9 +318,11 @@ export function DadosNegocio() {
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [hours,         setHours]         = useState<BusinessHour[]>([])
   const [contact,       setContact]       = useState<BusinessContact>({})
+  const [profile,       setProfile]       = useState<BusinessProfile>({})
   const [loading,       setLoading]       = useState(true)
   const [hoursError,    setHoursError]    = useState<string | null>(null)
   const [editingContact, setEditingContact] = useState(false)
+  const [editingProfile, setEditingProfile] = useState(false)
 
   useEffect(() => {
     Promise.allSettled([
@@ -211,16 +330,21 @@ export function DadosNegocio() {
       listProfessionals(),
       getBusinessHours(),
       getBusinessContact(),
-    ]).then(([s, p, h, c]) => {
+      getBusinessProfile(),
+    ]).then(([s, p, h, c, pr]) => {
       if (s.status === 'fulfilled') setServices(s.value)
       if (p.status === 'fulfilled') setProfessionals(p.value)
       if (h.status === 'fulfilled') setHours(h.value)
       else setHoursError((h as PromiseRejectedResult).reason?.message ?? 'Erro ao carregar horários')
       if (c.status === 'fulfilled') {
         setContact(c.value)
-        // Auto-open form if no contact data yet
         const hasData = Object.values(c.value).some((v) => v && String(v).trim())
         if (!hasData) setEditingContact(true)
+      }
+      if (pr.status === 'fulfilled') {
+        setProfile(pr.value)
+        const hasProfile = Object.values(pr.value).some((v) => v && String(v).trim())
+        if (!hasProfile) setEditingProfile(true)
       }
     }).finally(() => setLoading(false))
   }, [])
@@ -239,6 +363,34 @@ export function DadosNegocio() {
       <p className="text-sm text-gray-500 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
         Estes dados são usados pela IA para contextualizar o atendimento. Mantenha-os atualizados.
       </p>
+
+      {/* Business profile */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <span className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-brand-500" />
+              Perfil da Empresa
+            </span>
+          </CardTitle>
+          {!editingProfile && (
+            <button
+              onClick={() => setEditingProfile(true)}
+              className="text-xs text-brand-600 hover:underline"
+            >
+              Editar
+            </button>
+          )}
+        </CardHeader>
+        {editingProfile ? (
+          <ProfileForm
+            initial={profile}
+            onSaved={(p) => { setProfile(p); setEditingProfile(false) }}
+          />
+        ) : (
+          <ProfileDisplay profile={profile} onEdit={() => setEditingProfile(true)} />
+        )}
+      </Card>
 
       {/* Contact info */}
       <Card>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/Input'
 import { ResumoIA } from '@/components/modules/Atendimento/ResumoIA'
 import { TimelineDecisoes } from '@/components/modules/Atendimento/TimelineDecisoes'
 import { MemoriasCliente } from '@/components/modules/Atendimento/MemoriasCliente'
+import { MemoriaRecente } from '@/components/modules/Atendimento/MemoriaRecente'
 import {
   listConversations,
   getConversationMessages,
@@ -51,6 +52,7 @@ export default function ConversaDetalhePage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [intents, setIntents] = useState<MessageIntent[]>([])
   const [loading, setLoading] = useState(true)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Modal states
   const [notaModal, setNotaModal] = useState(false)
@@ -70,6 +72,11 @@ export default function ConversaDetalhePage() {
       })
       .finally(() => setLoading(false))
   }, [id])
+
+  // Scroll to the latest message when the list loads
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
+  }, [messages])
 
   const intentsByMessage = (messageId: string) =>
     intents.filter((i) => i.message_id === messageId)
@@ -211,6 +218,7 @@ export default function ConversaDetalhePage() {
                   )
                 })
               )}
+              <div ref={messagesEndRef} />
             </div>
           </Card>
         </div>
@@ -218,6 +226,7 @@ export default function ConversaDetalhePage() {
         {/* AI Panels */}
         <div className="space-y-4">
           <ResumoIA conversationId={id} />
+          <MemoriaRecente conversationId={id} />
           <MemoriasCliente customerId={conversation.customer_id} />
           <TimelineDecisoes conversationId={id} />
         </div>

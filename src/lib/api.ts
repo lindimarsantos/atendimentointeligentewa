@@ -28,6 +28,7 @@ import type {
   PromptTemplate,
   BusinessHour,
   ChannelSettings,
+  WhatsAppChannel,
   TenantSettings,
   Tenant,
   HandoffEntry,
@@ -41,6 +42,7 @@ import type {
   JobEntry,
   PredictionScore,
   RoiSummary,
+  BusinessProfile,
   BusinessContact,
   ApiKeys,
   UserTenantMembership,
@@ -414,6 +416,27 @@ export async function updateBusinessHours(hours: BusinessHour[]): Promise<void> 
   })
 }
 
+export async function getWhatsAppChannel(): Promise<WhatsAppChannel | null> {
+  return rpc('rpc_get_whatsapp_channel', { p_tenant_id: getTenantId() })
+}
+
+export async function updateWhatsAppChannel(data: {
+  instance_id: string
+  zapi_token: string
+  phone_number?: string
+  webhook_url?: string
+  is_active?: boolean
+}): Promise<void> {
+  await rpc('rpc_update_whatsapp_channel', {
+    p_tenant_id:    getTenantId(),
+    p_instance_id:  data.instance_id,
+    p_zapi_token:   data.zapi_token,
+    p_phone_number: data.phone_number ?? null,
+    p_webhook_url:  data.webhook_url ?? null,
+    p_is_active:    data.is_active ?? true,
+  })
+}
+
 export async function getChannelSettings(): Promise<ChannelSettings | null> {
   return rpc('rpc_get_channel_settings', {
     p_tenant_id: getTenantId(),
@@ -605,6 +628,22 @@ export async function listPredictionScores(params: {
 
 export async function getRoiSummary(months = 6): Promise<RoiSummary> {
   return rpc('rpc_get_roi_summary', { p_tenant_id: getTenantId(), p_months: months })
+}
+
+// ─── Business Profile ────────────────────────────────────────────────────────
+
+export async function getBusinessProfile(): Promise<BusinessProfile> {
+  const data = await rpc<BusinessProfile | null>('rpc_get_business_profile', {
+    p_tenant_id: getTenantId(),
+  })
+  return data ?? {}
+}
+
+export async function updateBusinessProfile(profile: BusinessProfile): Promise<void> {
+  await rpc('rpc_update_business_profile', {
+    p_tenant_id: getTenantId(),
+    p_profile:   profile,
+  })
 }
 
 // ─── Business Contact Info ───────────────────────────────────────────────────
