@@ -76,10 +76,10 @@ BEGIN
     '- ' || name
     || ' (' || duration_minutes || ' min)'
     || CASE
-         WHEN price_min IS NOT NULL AND price_max IS NOT NULL AND price_min <> price_max
-           THEN ' | R$ ' || price_min::text || '–' || price_max::text
-         WHEN price_min IS NOT NULL
-           THEN ' | R$ ' || price_min::text
+         WHEN price_from IS NOT NULL AND price_to IS NOT NULL AND price_from <> price_to
+           THEN ' | R$ ' || price_from::text || '–' || price_to::text
+         WHEN price_from IS NOT NULL
+           THEN ' | R$ ' || price_from::text
          ELSE ''
        END
     || CASE WHEN requires_evaluation THEN ' — requer avaliação' ELSE '' END,

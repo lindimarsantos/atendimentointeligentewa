@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -25,7 +25,7 @@ import { fmtDateTime, statusVariants } from '@/lib/utils'
 import { toast } from '@/components/ui/Toast'
 import {
   ArrowLeft, UserCheck, StickyNote,
-  CheckCircle2, AlertCircle, Tag,
+  CheckCircle2, AlertCircle, Tag, XCircle,
 } from 'lucide-react'
 
 const statusLabel: Record<string, string> = {
@@ -54,10 +54,20 @@ export default function ConversaDetalhePage() {
   const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // Individual loading states
+  const [savingAssumir, setSavingAssumir] = useState(false)
+  const [savingNota, setSavingNota] = useState(false)
+  const [savingEncerrar, setSavingEncerrar] = useState(false)
+
   // Modal states
   const [notaModal, setNotaModal] = useState(false)
   const [nota, setNota] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [encerrarModal, setEncerrarModal] = useState(false)
+
+  const loadMessages = () =>
+    getConversationMessages(id)
+      .then(setMessages)
+      .catch(() => {})
 
   useEffect(() => {
     Promise.all([
@@ -73,7 +83,7 @@ export default function ConversaDetalhePage() {
       .finally(() => setLoading(false))
   }, [id])
 
-  // Scroll to the latest message when the list loads
+  // Scroll to latest message whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
   }, [messages])
@@ -82,44 +92,45 @@ export default function ConversaDetalhePage() {
     intents.filter((i) => i.message_id === messageId)
 
   const handleAssumir = async () => {
-    setSaving(true)
+    setSavingAssumir(true)
     try {
       await assumirConversa(id)
-      toast('Conversa assumida com sucesso')
       setConversation((c) => c ? { ...c, status: 'open' } : c)
+      toast('Conversa assumida — você é o responsável agora')
     } catch (e: unknown) {
       toast(e instanceof Error ? e.message : 'Erro ao assumir', 'error')
     } finally {
-      setSaving(false)
+      setSavingAssumir(false)
     }
   }
 
   const handleNota = async () => {
     if (!nota.trim()) return
-    setSaving(true)
+    setSavingNota(true)
     try {
       await registrarNota(id, nota)
-      toast('Nota registrada')
       setNotaModal(false)
       setNota('')
+      await loadMessages()          // refresh to show the note in the chat
+      toast('Nota registrada')
     } catch (e: unknown) {
       toast(e instanceof Error ? e.message : 'Erro ao salvar nota', 'error')
     } finally {
-      setSaving(false)
+      setSavingNota(false)
     }
   }
 
   const handleEncerrar = async () => {
-    if (!confirm('Encerrar esta conversa?')) return
-    setSaving(true)
+    setSavingEncerrar(true)
     try {
       await encerrarConversa(id)
-      toast('Conversa encerrada')
       setConversation((c) => c ? { ...c, status: 'resolved' } : c)
+      setEncerrarModal(false)
+      toast('Conversa encerrada')
     } catch (e: unknown) {
       toast(e instanceof Error ? e.message : 'Erro ao encerrar', 'error')
     } finally {
-      setSaving(false)
+      setSavingEncerrar(false)
     }
   }
 
@@ -136,6 +147,8 @@ export default function ConversaDetalhePage() {
         <AlertCircle className="h-5 w-5" /> Conversa não encontrada
       </div>
     )
+
+  const isResolved = conversation.status === 'resolved'
 
   return (
     <div className="space-y-4">
@@ -157,15 +170,33 @@ export default function ConversaDetalhePage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={handleAssumir} loading={saving}>
-            <UserCheck className="h-3.5 w-3.5" /> Assumir
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => setNotaModal(true)}>
+          {!isResolved && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleAssumir}
+              loading={savingAssumir}
+            >
+              <UserCheck className="h-3.5 w-3.5" /> Assumir
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setNotaModal(true)}
+          >
             <StickyNote className="h-3.5 w-3.5" /> Nota
           </Button>
-          <Button variant="danger" size="sm" onClick={handleEncerrar} loading={saving}>
-            <CheckCircle2 className="h-3.5 w-3.5" /> Encerrar
-          </Button>
+          {!isResolved && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setEncerrarModal(true)}
+              loading={savingEncerrar}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" /> Encerrar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -185,13 +216,14 @@ export default function ConversaDetalhePage() {
               ) : (
                 messages.map((msg) => {
                   const isInbound = msg.direction === 'inbound'
+                  const isNota = msg.content_text?.startsWith('[Nota]')
                   const msgIntents = intentsByMessage(msg.id)
                   return (
                     <div
                       key={msg.id}
                       className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}
                     >
-                      <div className={`max-w-[75%] space-y-1`}>
+                      <div className="max-w-[75%] space-y-1">
                         {msgIntents.length > 0 && isInbound && (
                           <div className="flex flex-wrap gap-1 px-1">
                             {msgIntents.map((intent) => (
@@ -201,17 +233,26 @@ export default function ConversaDetalhePage() {
                         )}
                         <div
                           className={`px-3.5 py-2.5 rounded-2xl text-sm ${
-                            isInbound
-                              ? 'bg-gray-100 text-gray-800 rounded-tl-sm'
-                              : 'bg-brand-600 text-white rounded-tr-sm'
+                            isNota
+                              ? 'bg-amber-50 text-amber-800 border border-amber-200 rounded-tr-sm'
+                              : isInbound
+                                ? 'bg-gray-100 text-gray-800 rounded-tl-sm'
+                                : 'bg-brand-600 text-white rounded-tr-sm'
                           }`}
                         >
-                          {msg.content_text ?? `[${msg.content_type}]`}
+                          {isNota ? (
+                            <span className="flex items-start gap-1.5">
+                              <StickyNote className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                              {msg.content_text?.replace('[Nota] ', '')}
+                            </span>
+                          ) : (
+                            msg.content_text ?? `[${msg.content_type}]`
+                          )}
                         </div>
                         <p
                           className={`text-xs text-gray-400 px-1 ${isInbound ? 'text-left' : 'text-right'}`}
                         >
-                          {fmtDateTime(msg.sent_at)} · {msg.sender_type}
+                          {fmtDateTime(msg.sent_at)} · {isNota ? 'nota' : msg.sender_type}
                         </p>
                       </div>
                     </div>
@@ -233,7 +274,7 @@ export default function ConversaDetalhePage() {
       </div>
 
       {/* Nota modal */}
-      <Modal open={notaModal} onClose={() => setNotaModal(false)} title="Registrar nota">
+      <Modal open={notaModal} onClose={() => { setNotaModal(false); setNota('') }} title="Registrar nota">
         <div className="space-y-4">
           <Textarea
             label="Nota interna"
@@ -243,11 +284,30 @@ export default function ConversaDetalhePage() {
             placeholder="Descreva observações sobre o atendimento..."
           />
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setNotaModal(false)}>
+            <Button variant="secondary" onClick={() => { setNotaModal(false); setNota('') }}>
               Cancelar
             </Button>
-            <Button onClick={handleNota} loading={saving}>
+            <Button onClick={handleNota} loading={savingNota} disabled={!nota.trim()}>
               Salvar nota
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Encerrar confirmation modal */}
+      <Modal open={encerrarModal} onClose={() => setEncerrarModal(false)} title="Encerrar conversa">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Tem certeza que deseja encerrar esta conversa com{' '}
+            <strong>{conversation.customer_name ?? conversation.customer_phone}</strong>?
+            O status será alterado para <strong>Resolvida</strong>.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setEncerrarModal(false)}>
+              <XCircle className="h-3.5 w-3.5" /> Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleEncerrar} loading={savingEncerrar}>
+              <CheckCircle2 className="h-3.5 w-3.5" /> Confirmar encerramento
             </Button>
           </div>
         </div>
