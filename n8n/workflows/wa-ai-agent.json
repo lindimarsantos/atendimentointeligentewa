@@ -6,7 +6,10 @@
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "parameters": {
         "httpMethod": "POST",
         "path": "wa-ai-agent",
@@ -19,9 +22,12 @@
       "name": "Normalizar Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\nreturn [{ json: {\n  tenant_id:       body.tenant_id       || '5518085b-42e9-4608-8c56-890cef45ba9b',\n  customer_id:     body.customer_id,\n  conversation_id: body.conversation_id,\n  channel_id:      body.channel_id      || '58c4062a-9fe9-4ae2-abff-5a8b5236a79e',\n  content_text:    body.content_text    || body.message_text || '',\n  customer_name:   body.customer_name   || 'Cliente',\n  customer_phone:  body.customer_phone  || body.phone || '',\n}}];"
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\n// Detect content type — handles Supabase-normalized format AND raw Z-API format\nlet contentType       = body.content_type || 'text';\nlet mediaUrl          = body.media_url    || null;\nlet transcriptionText = body.transcription_text || null;\nlet contentText       = body.content_text || body.message_text || '';\nlet fileName          = body.file_name    || null;\nlet mediaDuration     = body.media_duration_sec || null;\n\n// Raw Z-API field fallbacks (if webhook reaches n8n before pre-processing)\nif (!mediaUrl) {\n  if (body.audio?.audioUrl) {\n    contentType   = 'audio';\n    mediaUrl      = body.audio.audioUrl;\n    mediaDuration = body.audio.seconds || null;\n    transcriptionText = body.audio.transcription || null;\n  } else if (body.video?.videoUrl) {\n    contentType = 'video';\n    mediaUrl    = body.video.videoUrl;\n    contentText = body.video.caption || contentText;\n  } else if (body.document?.documentUrl) {\n    contentType = 'document';\n    mediaUrl    = body.document.documentUrl;\n    fileName    = body.document.fileName || body.document.title || null;\n    contentText = body.document.caption || contentText;\n  } else if (body.image?.imageUrl) {\n    contentType = 'image';\n    mediaUrl    = body.image.imageUrl;\n    contentText = body.image.caption || contentText;\n  }\n}\n\nreturn [{ json: {\n  tenant_id:          body.tenant_id       || '5518085b-42e9-4608-8c56-890cef45ba9b',\n  customer_id:        body.customer_id,\n  conversation_id:    body.conversation_id,\n  channel_id:         body.channel_id      || '58c4062a-9fe9-4ae2-abff-5a8b5236a79e',\n  content_text:       contentText,\n  content_type:       contentType,\n  media_url:          mediaUrl,\n  transcription_text: transcriptionText,\n  file_name:          fileName,\n  media_duration_sec: mediaDuration,\n  customer_name:      body.customer_name   || 'Cliente',\n  customer_phone:     body.customer_phone  || body.phone || '',\n}}];"
       }
     },
     {
@@ -29,7 +35,10 @@
       "name": "Buscar Histórico",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [680, 300],
+      "position": [
+        680,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_get_conversation_messages",
@@ -37,17 +46,32 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey",        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Content-Type",  "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "keypair",
         "bodyParameters": {
           "parameters": [
-            { "name": "p_tenant_id",       "value": "={{ $('Normalizar Payload').item.json.tenant_id }}" },
-            { "name": "p_conversation_id", "value": "={{ $('Normalizar Payload').item.json.conversation_id }}" }
+            {
+              "name": "p_tenant_id",
+              "value": "={{ $('Normalizar Payload').item.json.tenant_id }}"
+            },
+            {
+              "name": "p_conversation_id",
+              "value": "={{ $('Normalizar Payload').item.json.conversation_id }}"
+            }
           ]
         },
         "options": {}
@@ -58,7 +82,10 @@
       "name": "Buscar Config IA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [900, 300],
+      "position": [
+        900,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_get_ai_agent",
@@ -66,16 +93,28 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey",        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Content-Type",  "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "keypair",
         "bodyParameters": {
           "parameters": [
-            { "name": "p_tenant_id", "value": "={{ $('Normalizar Payload').item.json.tenant_id }}" }
+            {
+              "name": "p_tenant_id",
+              "value": "={{ $('Normalizar Payload').item.json.tenant_id }}"
+            }
           ]
         },
         "options": {}
@@ -86,7 +125,10 @@
       "name": "Buscar Contexto Empresa",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_n8n_get_ai_context",
@@ -94,16 +136,28 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey",        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Content-Type",  "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "keypair",
         "bodyParameters": {
           "parameters": [
-            { "name": "p_conversation_id", "value": "={{ $('Normalizar Payload').item.json.conversation_id }}" }
+            {
+              "name": "p_conversation_id",
+              "value": "={{ $('Normalizar Payload').item.json.conversation_id }}"
+            }
           ]
         },
         "options": {}
@@ -114,9 +168,12 @@
       "name": "Preparar Contexto",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "parameters": {
-        "jsCode": "const payload    = $('Normalizar Payload').first().json;\nconst messages   = $('Buscar Histórico').all().map(i => i.json);\nconst agentCfg   = $('Buscar Config IA').first().json || {};\nconst aiContext  = $('Buscar Contexto Empresa').first().json?.ai_context_text || '';\n\nconst history = messages.slice(-15).map(m => {\n  const role = m.direction === 'inbound' ? 'Cliente' : 'Sofia';\n  return `${role}: ${m.content_text || ''}`;\n}).join('\\n');\n\nconst now     = new Date();\nconst dateStr = now.toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'America/Sao_Paulo' });\nconst timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });\n\nconst base = agentCfg.system_prompt || 'Você é Sofia, assistente virtual de uma clínica especializada.';\n\nconst systemPrompt = `${base}\\n\\n=== DADOS DA EMPRESA ===\\n${aiContext || '(dados não disponíveis no momento)'}\\n\\n=== REGRAS OBRIGATÓRIAS SOBRE DADOS DA EMPRESA ===\\n- Use SOMENTE os dados da seção \"=== DADOS DA EMPRESA ===\" para responder perguntas sobre endereço, telefone, WhatsApp, horários, serviços e profissionais.\\n- Se uma informação não estiver listada na seção \"=== DADOS DA EMPRESA ===\", responda: \"Não tenho essa informação disponível no momento. Posso verificar com nossa equipe e te retorno.\"\\n- NUNCA invente endereços, telefones, serviços, nomes de profissionais ou preços.\\n- NUNCA mencione serviços ou profissionais que não estejam listados acima.\\n\\n=== CONTEXTO DA CONVERSA ===\\nData/hora atual: ${dateStr} às ${timeStr} (horário de Brasília, UTC-3)\\nID da conversa: ${payload.conversation_id}\\nCliente: ${payload.customer_name} | Telefone: ${payload.customer_phone}\\n\\n=== HISTÓRICO RECENTE ===\\n${history || '(início da conversa)'}\\n\\n=== REGRAS OPERACIONAIS ===\\n- Responda SEMPRE em português brasileiro natural e humanizado. NUNCA mencione IA, robô ou sistemas.\\n- Para verificar disponibilidade de horários, use a ferramenta verificar_horarios.\\n- Apresente até 3 opções de horário de forma amigável. Aguarde o cliente escolher UMA opção antes de agendar.\\n- Use confirmar_agendamento SOMENTE após o cliente confirmar explicitamente o horário desejado.\\n- Ao chamar ferramentas, sempre inclua p_conversation_id = ${payload.conversation_id}\\n- Datas para agendamento em formato ISO com timezone -03:00. Exemplo: 2026-04-14T09:00:00-03:00\\n- Após confirmar agendamento, informe: serviço, profissional, data, horário e que um lembrete será enviado.`;\n\nreturn [{ json: { ...payload, system_prompt: systemPrompt, user_message: payload.content_text }}];"
+        "jsCode": "const payload    = $('Normalizar Payload').first().json;\nconst messages   = $('Buscar Histórico').all().map(i => i.json);\nconst agentCfg   = $('Buscar Config IA').first().json || {};\nconst aiContext  = $('Buscar Contexto Empresa').first().json?.ai_context_text || '';\n\n// Build conversation history, labelling media messages properly\nconst history = messages.slice(-15).map(m => {\n  const role = m.direction === 'inbound' ? 'Cliente' : 'Sofia';\n  let text = m.content_text || '';\n  if (!text) {\n    if (m.content_type === 'audio')    text = '[Mensagem de voz]';\n    else if (m.content_type === 'video')    text = '[Vídeo]';\n    else if (m.content_type === 'document') text = '[Documento]';\n    else if (m.content_type === 'image')    text = '[Imagem]';\n  }\n  return `${role}: ${text}`;\n}).join('\\n');\n\n// Build user message based on what was received\nconst contentType = payload.content_type || 'text';\nlet userMessage   = payload.content_text || '';\n\nif (contentType === 'audio') {\n  if (payload.transcription_text) {\n    userMessage = `[Mensagem de voz transcrita]: ${payload.transcription_text}`;\n  } else {\n    const dur = payload.media_duration_sec ? ` de ${payload.media_duration_sec}s` : '';\n    userMessage = `[O cliente enviou uma mensagem de voz${dur}. A transcrição automática não está disponível. Peça gentilmente para o cliente repetir por texto se necessário.]`;\n  }\n} else if (contentType === 'video') {\n  userMessage = payload.content_text\n    ? `[O cliente enviou um vídeo com legenda]: ${payload.content_text}`\n    : '[O cliente enviou um vídeo. Responda naturalmente e pergunte como pode ajudá-lo.]';\n} else if (contentType === 'document') {\n  const fname = payload.file_name ? ` \"${payload.file_name}\"` : \"\";\n  userMessage = payload.content_text\n    ? `[O cliente enviou um documento${fname} com comentário]: ${payload.content_text}`\n    : `[O cliente enviou um documento${fname}. Pergunte como pode ajudá-lo em relação a este documento.]`;\n} else if (contentType === 'image') {\n  userMessage = payload.content_text\n    ? `[O cliente enviou uma imagem com legenda]: ${payload.content_text}`\n    : '[O cliente enviou uma imagem. Responda naturalmente e pergunte como pode ajudá-lo.]';\n}\n\nconst now     = new Date();\nconst dateStr = now.toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'America/Sao_Paulo' });\nconst timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });\n\nconst base = agentCfg.system_prompt || 'Você é Sofia, assistente virtual de uma clínica especializada.';\n\nconst systemPrompt = `${base}\n\n=== DADOS DA EMPRESA ===\n${aiContext || '(dados não disponíveis no momento)'}\n\n=== REGRAS OBRIGATÓRIAS SOBRE DADOS DA EMPRESA ===\n- Use SOMENTE os dados da seção \"=== DADOS DA EMPRESA ===\" para responder perguntas sobre endereço, telefone, WhatsApp, horários, serviços e profissionais.\n- Se uma informação não estiver listada na seção \"=== DADOS DA EMPRESA ===\", responda: \"Não tenho essa informação disponível no momento. Posso verificar com nossa equipe e te retorno.\"\n- NUNCA invente endereços, telefones, serviços, nomes de profissionais ou preços.\n- NUNCA mencione serviços ou profissionais que não estejam listados acima.\n\n=== CONTEXTO DA CONVERSA ===\nData/hora atual: ${dateStr} às ${timeStr} (horário de Brasília, UTC-3)\nID da conversa: ${payload.conversation_id}\nCliente: ${payload.customer_name} | Telefone: ${payload.customer_phone}\n\n=== HISTÓRICO RECENTE ===\n${history || '(início da conversa)'}\n\n=== REGRAS OPERACIONAIS ===\n- Responda SEMPRE em português brasileiro natural e humanizado. NUNCA mencione IA, robô ou sistemas.\n- Para verificar disponibilidade de horários, use a ferramenta verificar_horarios.\n- Apresente até 3 opções de horário de forma amigável. Aguarde o cliente escolher UMA opção antes de agendar.\n- Use confirmar_agendamento SOMENTE após o cliente confirmar explicitamente o horário desejado.\n- Ao chamar ferramentas, sempre inclua p_conversation_id = ${payload.conversation_id}\n- Datas para agendamento em formato ISO com timezone -03:00. Exemplo: 2026-04-14T09:00:00-03:00\n- Após confirmar agendamento, informe: serviço, profissional, data, horário e que um lembrete será enviado.`;\n\nreturn [{ json: { ...payload, system_prompt: systemPrompt, user_message: userMessage }}];"
       }
     },
     {
@@ -124,7 +181,10 @@
       "name": "AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1,
-      "position": [1560, 300],
+      "position": [
+        1560,
+        300
+      ],
       "parameters": {
         "promptType": "define",
         "text": "={{ $json.user_message }}",
@@ -140,7 +200,10 @@
       "name": "Google Gemini",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [1440, 500],
+      "position": [
+        1440,
+        500
+      ],
       "parameters": {
         "modelName": "models/gemini-2.0-flash",
         "options": {
@@ -160,7 +223,10 @@
       "name": "Verificar Horários",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
-      "position": [1560, 500],
+      "position": [
+        1560,
+        500
+      ],
       "parameters": {
         "name": "verificar_horarios",
         "description": "Verifica horários disponíveis na clínica para agendamento. Use quando o cliente quiser marcar uma consulta. Parâmetros obrigatórios: p_conversation_id (use sempre o ID da conversa do contexto), p_service_name (nome exato do serviço desejado). Parâmetros opcionais: p_date_from e p_date_to (formato YYYY-MM-DD para filtrar por período). Retorna lista de horários disponíveis com data, hora e nome do profissional.",
@@ -170,9 +236,18 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey",        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Content-Type",  "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -215,7 +290,10 @@
       "name": "Confirmar Agendamento",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
-      "position": [1680, 500],
+      "position": [
+        1680,
+        500
+      ],
       "parameters": {
         "name": "confirmar_agendamento",
         "description": "Cria o agendamento SOMENTE após o cliente confirmar explicitamente o horário desejado. Parâmetros obrigatórios: p_conversation_id (ID da conversa do contexto), p_service_name (nome do serviço), p_professional_name (nome do profissional retornado por verificar_horarios), p_start_at (data e hora do agendamento em formato ISO com timezone -03:00, ex: 2026-04-14T09:00:00-03:00). Retorna confirmação com appointment_id e detalhes.",
@@ -225,9 +303,18 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey",        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Content-Type",  "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -270,7 +357,10 @@
       "name": "Enfileirar Resposta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1780, 300],
+      "position": [
+        1780,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_enqueue_buffered_reply",
@@ -278,21 +368,48 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey",        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
-            { "name": "Content-Type",  "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "keypair",
         "bodyParameters": {
           "parameters": [
-            { "name": "p_tenant_id",       "value": "={{ $('Normalizar Payload').item.json.tenant_id }}" },
-            { "name": "p_conversation_id", "value": "={{ $('Normalizar Payload').item.json.conversation_id }}" },
-            { "name": "p_customer_id",     "value": "={{ $('Normalizar Payload').item.json.customer_id }}" },
-            { "name": "p_channel_id",      "value": "={{ $('Normalizar Payload').item.json.channel_id }}" },
-            { "name": "p_content_text",    "value": "={{ $json.output }}" },
-            { "name": "p_delay_seconds",   "value": "2" }
+            {
+              "name": "p_tenant_id",
+              "value": "={{ $('Normalizar Payload').item.json.tenant_id }}"
+            },
+            {
+              "name": "p_conversation_id",
+              "value": "={{ $('Normalizar Payload').item.json.conversation_id }}"
+            },
+            {
+              "name": "p_customer_id",
+              "value": "={{ $('Normalizar Payload').item.json.customer_id }}"
+            },
+            {
+              "name": "p_channel_id",
+              "value": "={{ $('Normalizar Payload').item.json.channel_id }}"
+            },
+            {
+              "name": "p_content_text",
+              "value": "={{ $json.output }}"
+            },
+            {
+              "name": "p_delay_seconds",
+              "value": "2"
+            }
           ]
         },
         "options": {}
@@ -303,7 +420,10 @@
       "name": "Resposta 200 OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [2000, 300],
+      "position": [
+        2000,
+        300
+      ],
       "parameters": {
         "respondWith": "json",
         "responseBody": "{\"status\":\"ok\"}",
@@ -315,37 +435,125 @@
   ],
   "connections": {
     "Webhook": {
-      "main": [[{ "node": "Normalizar Payload", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Normalizar Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Normalizar Payload": {
-      "main": [[{ "node": "Buscar Histórico", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Buscar Histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Histórico": {
-      "main": [[{ "node": "Buscar Config IA", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Buscar Config IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Config IA": {
-      "main": [[{ "node": "Buscar Contexto Empresa", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Buscar Contexto Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Buscar Contexto Empresa": {
-      "main": [[{ "node": "Preparar Contexto", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Preparar Contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Preparar Contexto": {
-      "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Google Gemini": {
-      "ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]]
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Verificar Horários": {
-      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Confirmar Agendamento": {
-      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     },
     "AI Agent": {
-      "main": [[{ "node": "Enfileirar Resposta", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Enfileirar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Enfileirar Resposta": {
-      "main": [[{ "node": "Resposta 200 OK", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Resposta 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -356,7 +564,11 @@
     "errorWorkflow": ""
   },
   "tags": [
-    { "name": "whatsapp" },
-    { "name": "ai-agent" }
+    {
+      "name": "whatsapp"
+    },
+    {
+      "name": "ai-agent"
+    }
   ]
 }
