@@ -82,13 +82,41 @@
       }
     },
     {
+      "id": "a1b2c3d4-0012-0012-0012-000000000012",
+      "name": "Buscar Contexto Empresa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1120, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_n8n_get_ai_context",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
+            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "p_conversation_id", "value": "={{ $('Normalizar Payload').item.json.conversation_id }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
       "id": "a1b2c3d4-0005-0005-0005-000000000005",
       "name": "Preparar Contexto",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 300],
+      "position": [1340, 300],
       "parameters": {
-        "jsCode": "const payload   = $('Normalizar Payload').first().json;\nconst messages  = $('Buscar Histórico').all().map(i => i.json);\nconst agentCfg  = $('Buscar Config IA').first().json || {};\n\nconst history = messages.slice(-15).map(m => {\n  const role = m.direction === 'inbound' ? 'Cliente' : 'Sofia';\n  return `${role}: ${m.content_text || ''}`;\n}).join('\\n');\n\nconst now     = new Date();\nconst dateStr = now.toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'America/Sao_Paulo' });\nconst timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });\n\nconst base = agentCfg.system_prompt || 'Você é Sofia, assistente virtual de uma clínica odontológica especializada em implantes dentários.';\n\nconst systemPrompt = `${base}\n\n=== CONTEXTO DA CONVERSA ===\nData/hora atual: ${dateStr} às ${timeStr} (horário de Brasília, UTC-3)\nID da conversa: ${payload.conversation_id}\nCliente: ${payload.customer_name} | Telefone: ${payload.customer_phone}\n\n=== HISTÓRICO RECENTE ===\n${history || '(início da conversa)'}\n\n=== REGRAS OBRIGATÓRIAS ===\n- Responda SEMPRE em português brasileiro natural e humanizado. NUNCA mencione IA, robô ou sistemas.\n- Para verificar disponibilidade de horários, use a ferramenta verificar_horarios.\n- Apresente até 3 opções de horário de forma amigável. Aguarde o cliente escolher UMA opção antes de agendar.\n- Use confirmar_agendamento SOMENTE após o cliente confirmar explicitamente o horário desejado.\n- Ao chamar ferramentas, sempre inclua p_conversation_id = ${payload.conversation_id}\n- Datas para agendamento em formato ISO com timezone -03:00. Exemplo: 2026-04-14T09:00:00-03:00\n- Após confirmar agendamento, informe: serviço, profissional, data, horário e que um lembrete será enviado.`;\n\nreturn [{ json: { ...payload, system_prompt: systemPrompt, user_message: payload.content_text }}];"
+        "jsCode": "const payload    = $('Normalizar Payload').first().json;\nconst messages   = $('Buscar Histórico').all().map(i => i.json);\nconst agentCfg   = $('Buscar Config IA').first().json || {};\nconst aiContext  = $('Buscar Contexto Empresa').first().json?.ai_context_text || '';\n\nconst history = messages.slice(-15).map(m => {\n  const role = m.direction === 'inbound' ? 'Cliente' : 'Sofia';\n  return `${role}: ${m.content_text || ''}`;\n}).join('\\n');\n\nconst now     = new Date();\nconst dateStr = now.toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'America/Sao_Paulo' });\nconst timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });\n\nconst base = agentCfg.system_prompt || 'Você é Sofia, assistente virtual de uma clínica especializada.';\n\nconst systemPrompt = `${base}\\n\\n=== DADOS DA EMPRESA ===\\n${aiContext || '(dados não disponíveis no momento)'}\\n\\n=== REGRAS OBRIGATÓRIAS SOBRE DADOS DA EMPRESA ===\\n- Use SOMENTE os dados da seção \"=== DADOS DA EMPRESA ===\" para responder perguntas sobre endereço, telefone, WhatsApp, horários, serviços e profissionais.\\n- Se uma informação não estiver listada na seção \"=== DADOS DA EMPRESA ===\", responda: \"Não tenho essa informação disponível no momento. Posso verificar com nossa equipe e te retorno.\"\\n- NUNCA invente endereços, telefones, serviços, nomes de profissionais ou preços.\\n- NUNCA mencione serviços ou profissionais que não estejam listados acima.\\n\\n=== CONTEXTO DA CONVERSA ===\\nData/hora atual: ${dateStr} às ${timeStr} (horário de Brasília, UTC-3)\\nID da conversa: ${payload.conversation_id}\\nCliente: ${payload.customer_name} | Telefone: ${payload.customer_phone}\\n\\n=== HISTÓRICO RECENTE ===\\n${history || '(início da conversa)'}\\n\\n=== REGRAS OPERACIONAIS ===\\n- Responda SEMPRE em português brasileiro natural e humanizado. NUNCA mencione IA, robô ou sistemas.\\n- Para verificar disponibilidade de horários, use a ferramenta verificar_horarios.\\n- Apresente até 3 opções de horário de forma amigável. Aguarde o cliente escolher UMA opção antes de agendar.\\n- Use confirmar_agendamento SOMENTE após o cliente confirmar explicitamente o horário desejado.\\n- Ao chamar ferramentas, sempre inclua p_conversation_id = ${payload.conversation_id}\\n- Datas para agendamento em formato ISO com timezone -03:00. Exemplo: 2026-04-14T09:00:00-03:00\\n- Após confirmar agendamento, informe: serviço, profissional, data, horário e que um lembrete será enviado.`;\n\nreturn [{ json: { ...payload, system_prompt: systemPrompt, user_message: payload.content_text }}];"
       }
     },
     {
@@ -96,7 +124,7 @@
       "name": "AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1,
-      "position": [1340, 300],
+      "position": [1560, 300],
       "parameters": {
         "promptType": "define",
         "text": "={{ $json.user_message }}",
@@ -112,7 +140,7 @@
       "name": "Google Gemini",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [1220, 500],
+      "position": [1440, 500],
       "parameters": {
         "modelName": "models/gemini-2.0-flash",
         "options": {
@@ -132,7 +160,7 @@
       "name": "Verificar Horários",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
-      "position": [1340, 500],
+      "position": [1560, 500],
       "parameters": {
         "name": "verificar_horarios",
         "description": "Verifica horários disponíveis na clínica para agendamento. Use quando o cliente quiser marcar uma consulta. Parâmetros obrigatórios: p_conversation_id (use sempre o ID da conversa do contexto), p_service_name (nome exato do serviço desejado). Parâmetros opcionais: p_date_from e p_date_to (formato YYYY-MM-DD para filtrar por período). Retorna lista de horários disponíveis com data, hora e nome do profissional.",
@@ -187,7 +215,7 @@
       "name": "Confirmar Agendamento",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
-      "position": [1460, 500],
+      "position": [1680, 500],
       "parameters": {
         "name": "confirmar_agendamento",
         "description": "Cria o agendamento SOMENTE após o cliente confirmar explicitamente o horário desejado. Parâmetros obrigatórios: p_conversation_id (ID da conversa do contexto), p_service_name (nome do serviço), p_professional_name (nome do profissional retornado por verificar_horarios), p_start_at (data e hora do agendamento em formato ISO com timezone -03:00, ex: 2026-04-14T09:00:00-03:00). Retorna confirmação com appointment_id e detalhes.",
@@ -242,7 +270,7 @@
       "name": "Enfileirar Resposta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1560, 300],
+      "position": [1780, 300],
       "parameters": {
         "method": "POST",
         "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_enqueue_buffered_reply",
@@ -275,7 +303,7 @@
       "name": "Resposta 200 OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1780, 300],
+      "position": [2000, 300],
       "parameters": {
         "respondWith": "json",
         "responseBody": "{\"status\":\"ok\"}",
@@ -296,6 +324,9 @@
       "main": [[{ "node": "Buscar Config IA", "type": "main", "index": 0 }]]
     },
     "Buscar Config IA": {
+      "main": [[{ "node": "Buscar Contexto Empresa", "type": "main", "index": 0 }]]
+    },
+    "Buscar Contexto Empresa": {
       "main": [[{ "node": "Preparar Contexto", "type": "main", "index": 0 }]]
     },
     "Preparar Contexto": {
