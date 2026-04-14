@@ -50,14 +50,14 @@ import type {
 
 async function rpc<T>(name: string, params: Record<string, unknown> = {}): Promise<T> {
   const { data, error } = await supabase.rpc(name, params)
-  if (error) throw error
+  if (error) throw new Error(error.message ?? error.details ?? 'Erro desconhecido')
   return data as T
 }
 
 // json_agg() returns NULL for empty tables — always return [] instead of null
 async function rpcList<T>(name: string, params: Record<string, unknown> = {}): Promise<T[]> {
   const { data, error } = await supabase.rpc(name, params)
-  if (error) throw error
+  if (error) throw new Error(error.message ?? error.details ?? 'Erro desconhecido')
   return (data as T[] | null) ?? []
 }
 
