@@ -543,7 +543,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $('Normalizar Payload').item.json.media_url }}",
+        "url": "={{ $json.media_url }}",
         "options": {
           "response": {
             "response": {
