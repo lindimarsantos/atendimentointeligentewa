@@ -369,6 +369,7 @@ export async function updateAiAgentProfile(
     p_use_recommendations: data.use_recommendations,
     p_use_scheduling: data.use_scheduling,
     p_allow_voice_response: data.allow_voice_response,
+    p_restrict_to_configured_services: data.restrict_to_configured_services,
   })
 }
 

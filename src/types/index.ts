@@ -278,6 +278,7 @@ export interface AiAgentProfile {
   use_recommendations: boolean
   use_scheduling: boolean
   allow_voice_response: boolean
+  restrict_to_configured_services: boolean
   config_jsonb?: Record<string, unknown>
   updated_at: string
 }
