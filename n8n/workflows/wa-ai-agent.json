@@ -841,7 +841,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "=https://api.z-api.io/instances/{{ $('Buscar Config Voz').first().json.zapi_instance_id }}/token/{{ $('Buscar Config Voz').first().json.zapi_token }}/send-audio",
+        "url": "=https://api.z-api.io/instances/{{ $vars.ZAPI_INSTANCE_ID }}/token/{{ $vars.ZAPI_TOKEN }}/send-audio",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
