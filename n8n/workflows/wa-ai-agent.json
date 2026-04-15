@@ -857,7 +857,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"phone\": \"{{ $('Normalizar Payload').first().json.customer_phone }}\",\n  \"audio\": \"data:audio/mpeg;base64,{{ $json.audio_base64 }}\",\n  \"delayMessage\": 1\n}",
+        "jsonBody": "={\n  \"phone\": \"{{ $('Enriquecer Payload').first().json.customer_phone }}\",\n  \"audio\": \"data:audio/mpeg;base64,{{ $json.audio_base64 }}\",\n  \"delayMessage\": 1\n}",
         "options": {}
       }
     }
