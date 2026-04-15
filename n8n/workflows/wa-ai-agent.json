@@ -841,7 +841,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "=https://api.z-api.io/instances/{{ $vars.ZAPI_INSTANCE_ID }}/token/{{ $vars.ZAPI_TOKEN }}/send-audio",
+        "url": "=https://api.z-api.io/instances/{{ $('Buscar Config Voz').first().json.zapi_instance_id }}/token/{{ $('Buscar Config Voz').first().json.zapi_token }}/send-audio",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -851,13 +851,13 @@
             },
             {
               "name": "Client-Token",
-              "value": "={{ $vars.ZAPI_CLIENT_TOKEN }}"
+              "value": "={{ $('Buscar Config Voz').first().json.zapi_client_token }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"phone\": \"{{ $('Normalizar Payload').first().json.customer_phone }}\",\n  \"audio\": \"data:audio/mpeg;base64,{{ $json.audio_base64 }}\",\n  \"delayMessage\": 1\n}",
+        "jsonBody": "={\n  \"phone\": \"{{ $('Enriquecer Payload').first().json.customer_phone }}\",\n  \"audio\": \"data:audio/mpeg;base64,{{ $json.audio_base64 }}\",\n  \"delayMessage\": 1\n}",
         "options": {}
       }
     }
