@@ -456,7 +456,7 @@
         "headerParameters": {
           "parameters": [
             {
-              "name": "apikey ",
+              "name": "apikey",
               "value": "YOUR_SUPABASE_ANON_KEY"
             },
             {
@@ -606,7 +606,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload       = $('Normalizar Payload').first().json;\nconst transcription = $input.first().json?.text || '';\nreturn [{ json: { ...payload, transcription_text: transcription } }];"
+        "jsCode": "const transcription = $input.first().json?.text || '';\nconst base = $('Enriquecer Payload').first().json;\nreturn [{ json: { ...base, transcription_text: transcription } }];"
       },
       "id": "bb000001-0000-0000-0000-000000000004",
       "name": "Aplicar Transcrição",
