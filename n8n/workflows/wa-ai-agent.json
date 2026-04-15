@@ -134,7 +134,9 @@
       "parameters": {
         "agent": "openAiFunctionsAgent",
         "text": "={{ $json.user_message }}",
-        "options": {}
+        "options": {
+          "systemMessage": "={{ $json.system_prompt }}"
+        }
       },
       "id": "1cdb9cf3-8c36-4cc7-91cb-4013680cd5c6",
       "name": "AI Agent",
