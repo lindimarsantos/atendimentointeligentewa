@@ -827,7 +827,7 @@
         280
       ],
       "parameters": {
-        "jsCode": "// Extrai o áudio binário retornado pelo ElevenLabs e converte para base64\nconst item = $input.first();\nconst binaryKey = Object.keys(item.binary || {})[0];\nif (!binaryKey) throw new Error('ElevenLabs não retornou áudio binário');\n\nconst audioBase64 = item.binary[binaryKey].data;\nreturn [{ json: { audio_base64: audioBase64 } }];"
+        "jsCode": "// n8n 2.x stores binary data on disk — must use getBinaryDataBuffer()\nconst item = $input.first();\nconst binaryKey = Object.keys(item.binary || {})[0];\nif (!binaryKey) throw new Error('ElevenLabs não retornou áudio binário');\n\nconst buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nconst audioBase64 = buffer.toString('base64');\nreturn [{ json: { audio_base64: audioBase64 } }];"
       }
     },
     {
