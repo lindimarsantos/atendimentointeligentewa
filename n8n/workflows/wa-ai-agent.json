@@ -848,6 +848,10 @@
             {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "Client-Token",
+              "value": "={{ $('Buscar Config Voz').first().json.zapi_client_token }}"
             }
           ]
         },
