@@ -955,6 +955,12 @@
         "specifyBody": "json",
         "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": [\n      {\"type\": \"text\", \"text\": \"Analise esta imagem detalhadamente em portugu\\u00eas. Descreva o que v\\u00ea: objetos, pessoas, cen\\u00e1rio, textos vis\\u00edveis, cores relevantes. Seja objetivo e preciso, em at\\u00e9 3 par\\u00e1grafos.\"},\n      {\"type\": \"image_url\", \"image_url\": {\"url\": \"data:{{ $json.image_mime }};base64,{{ $json.image_base64 }}\"}}\n    ]\n  }],\n  \"max_tokens\": 600\n}",
         "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "EEUz5FO2evmPQFXs",
+          "name": "OpenAI account"
+        }
       }
     },
     {
