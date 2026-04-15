@@ -72,7 +72,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1664,
+        1880,
         0
       ]
     },
@@ -113,20 +113,20 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1888,
+        2080,
         0
       ]
     },
     {
       "parameters": {
-        "jsCode": "const payload    = $('Normalizar Payload').first().json;\nconst messages   = $('Buscar Histórico').all().map(i => i.json);\nconst agentCfg   = $('Buscar Config IA').first().json || {};\nconst companyContext  = $('Buscar Contexto Empresa').first().json?.ai_context_text || '';\nconst businessProfile = $('Buscar Perfil Empresa').first().json?.profile_text || '';\n\n// Try to get Whisper transcription if audio path ran\nlet transcriptionText = payload.transcription_text || null;\ntry {\n  const tItems = $('Aplicar Transcrição').all();\n  if (tItems.length > 0) transcriptionText = tItems[0].json?.transcription_text || transcriptionText;\n} catch (e) {}\n\n// Build conversation history, labelling media messages\nconst history = messages.slice(-15).map(m => {\n  const role = m.direction === 'inbound' ? 'Cliente' : 'Sofia';\n  let text = m.content_text || '';\n  if (!text) {\n    if (m.content_type === 'audio')    text = '[Mensagem de voz]';\n    else if (m.content_type === 'video')    text = '[Vídeo]';\n    else if (m.content_type === 'document') text = '[Documento]';\n    else if (m.content_type === 'image')    text = '[Imagem]';\n  }\n  return `${role}: ${text}`;\n}).join('\\n');\n\n// Build user message based on content type\nconst contentType = payload.content_type || 'text';\nlet userMessage   = payload.content_text || '';\n\nif (contentType === 'audio') {\n  if (transcriptionText) {\n    userMessage = `[Mensagem de voz transcrita]: ${transcriptionText}`;\n  } else {\n    const dur = payload.media_duration_sec ? ` de ${payload.media_duration_sec}s` : '';\n    userMessage = `[O cliente enviou uma mensagem de voz${dur}. Não foi possível transcrever. Peça gentilmente para repetir por texto.]`;\n  }\n} else if (contentType === 'video') {\n  userMessage = payload.content_text\n    ? `[O cliente enviou um vídeo com legenda]: ${payload.content_text}`\n    : '[O cliente enviou um vídeo. Responda naturalmente e pergunte como pode ajudá-lo.]';\n} else if (contentType === 'document') {\n  const fname = payload.file_name ? ` \"${payload.file_name}\"` : '';\n  userMessage = payload.content_text\n    ? `[O cliente enviou um documento${fname} com comentário]: ${payload.content_text}`\n    : `[O cliente enviou um documento${fname}. Pergunte como pode ajudá-lo.]`;\n} else if (contentType === 'image') {\n  userMessage = payload.content_text\n    ? `[O cliente enviou uma imagem com legenda]: ${payload.content_text}`\n    : '[O cliente enviou uma imagem. Responda naturalmente e pergunte como pode ajudá-lo.]';\n}\n\nconst now     = new Date();\nconst dateStr = now.toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'America/Sao_Paulo' });\nconst timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });\n\nconst base = agentCfg.system_prompt || 'Você é Sofia, assistente virtual de uma clínica especializada.';\n\nconst systemPrompt = `${base}\n${companyContext ? `\\n=== DADOS DA EMPRESA ===\\n${companyContext}` : ''}\n${businessProfile ? `\\n=== PERFIL DA EMPRESA ===\\n${businessProfile}` : ''}\n\n=== REGRA CRÍTICA SOBRE SERVIÇOS ===\nA lista \"Serviços Disponíveis\" contém os nomes oficiais dos serviços da clínica.\n1. Utilize exatamente os nomes da lista.\n2. Não invente serviços que não estejam nela.\n3. Se um serviço não estiver na lista, diga que irá verificar com a clínica.\n\n=== CONTEXTO DA CONVERSA ===\nData/hora atual: ${dateStr} às ${timeStr} (horário de Brasília, UTC-3)\nID da conversa: ${payload.conversation_id}\nCliente: ${payload.customer_name} | Telefone: ${payload.customer_phone}\n\n=== HISTÓRICO RECENTE ===\n${history || '(início da conversa)'}\n\n=== REGRAS OBRIGATÓRIAS ===\n- Responda SEMPRE em português brasileiro natural e humanizado. NUNCA mencione IA, robô ou sistemas.\n- Para verificar disponibilidade de horários, use a ferramenta verificar_horarios.\n- Apresente até 3 opções de horário de forma amigável. Aguarde o cliente escolher UMA opção antes de agendar.\n- Use confirmar_agendamento SOMENTE após o cliente confirmar explicitamente o horário desejado.\n- Ao chamar ferramentas, sempre inclua p_conversation_id = ${payload.conversation_id}\n- Datas para agendamento em formato ISO com timezone -03:00. Exemplo: 2026-04-14T09:00:00-03:00\n- Após confirmar agendamento, informe: serviço, profissional, data, horário e que um lembrete será enviado.`;\n\nreturn [{ json: { ...payload, system_prompt: systemPrompt, user_message: userMessage }}];"
+        "jsCode": "const payload    = $('Enriquecer Payload').first().json;\nconst messages   = $('Buscar Histórico').all().map(i => i.json);\nconst agentCfg   = $('Buscar Config IA').first().json || {};\nconst companyContext  = $('Buscar Contexto Empresa').first().json?.ai_context_text || '';\nconst businessProfile = $('Buscar Perfil Empresa').first().json?.profile_text || '';\n\n// Try to get Whisper transcription if audio path ran\nlet transcriptionText = payload.transcription_text || null;\ntry {\n  const tItems = $('Aplicar Transcrição').all();\n  if (tItems.length > 0) transcriptionText = tItems[0].json?.transcription_text || transcriptionText;\n} catch (e) {}\n\n// Build conversation history, labelling media messages\nconst history = messages.slice(-15).map(m => {\n  const role = m.direction === 'inbound' ? 'Cliente' : 'Sofia';\n  let text = m.content_text || '';\n  if (!text) {\n    if (m.content_type === 'audio')    text = '[Mensagem de voz]';\n    else if (m.content_type === 'video')    text = '[Vídeo]';\n    else if (m.content_type === 'document') text = '[Documento]';\n    else if (m.content_type === 'image')    text = '[Imagem]';\n  }\n  return `${role}: ${text}`;\n}).join('\\n');\n\n// Build user message based on content type\nconst contentType = payload.content_type || 'text';\nlet userMessage   = payload.content_text || '';\n\nif (contentType === 'audio') {\n  if (transcriptionText) {\n    userMessage = `[Mensagem de voz transcrita]: ${transcriptionText}`;\n  } else {\n    const dur = payload.media_duration_sec ? ` de ${payload.media_duration_sec}s` : '';\n    userMessage = `[O cliente enviou uma mensagem de voz${dur}. Não foi possível transcrever. Peça gentilmente para repetir por texto.]`;\n  }\n} else if (contentType === 'video') {\n  userMessage = payload.content_text\n    ? `[O cliente enviou um vídeo com legenda]: ${payload.content_text}`\n    : '[O cliente enviou um vídeo. Responda naturalmente e pergunte como pode ajudá-lo.]';\n} else if (contentType === 'document') {\n  const fname = payload.file_name ? ` \"${payload.file_name}\"` : '';\n  userMessage = payload.content_text\n    ? `[O cliente enviou um documento${fname} com comentário]: ${payload.content_text}`\n    : `[O cliente enviou um documento${fname}. Pergunte como pode ajudá-lo.]`;\n} else if (contentType === 'image') {\n  userMessage = payload.content_text\n    ? `[O cliente enviou uma imagem com legenda]: ${payload.content_text}`\n    : '[O cliente enviou uma imagem. Responda naturalmente e pergunte como pode ajudá-lo.]';\n}\n\nconst now     = new Date();\nconst dateStr = now.toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'America/Sao_Paulo' });\nconst timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });\n\nconst base = agentCfg.system_prompt || 'Você é Sofia, assistente virtual de uma clínica especializada.';\n\nconst systemPrompt = `${base}\n${companyContext ? `\\n=== DADOS DA EMPRESA ===\\n${companyContext}` : ''}\n${businessProfile ? `\\n=== PERFIL DA EMPRESA ===\\n${businessProfile}` : ''}\n\n=== REGRA CRÍTICA SOBRE SERVIÇOS ===\nA lista \"Serviços Disponíveis\" contém os nomes oficiais dos serviços da clínica.\n1. Utilize exatamente os nomes da lista.\n2. Não invente serviços que não estejam nela.\n3. Se um serviço não estiver na lista, diga que irá verificar com a clínica.\n\n=== CONTEXTO DA CONVERSA ===\nData/hora atual: ${dateStr} às ${timeStr} (horário de Brasília, UTC-3)\nID da conversa: ${payload.conversation_id}\nCliente: ${payload.customer_name} | Telefone: ${payload.customer_phone}\n\n=== HISTÓRICO RECENTE ===\n${history || '(início da conversa)'}\n\n=== REGRAS OBRIGATÓRIAS ===\n- Responda SEMPRE em português brasileiro natural e humanizado. NUNCA mencione IA, robô ou sistemas.\n- Para verificar disponibilidade de horários, use a ferramenta verificar_horarios.\n- Apresente até 3 opções de horário de forma amigável. Aguarde o cliente escolher UMA opção antes de agendar.\n- Use confirmar_agendamento SOMENTE após o cliente confirmar explicitamente o horário desejado.\n- Ao chamar ferramentas, sempre inclua p_conversation_id = ${payload.conversation_id}\n- Datas para agendamento em formato ISO com timezone -03:00. Exemplo: 2026-04-14T09:00:00-03:00\n- Após confirmar agendamento, informe: serviço, profissional, data, horário e que um lembrete será enviado.`;\n\nreturn [{ json: { ...payload, system_prompt: systemPrompt, user_message: userMessage }}];"
       },
       "id": "e72f624b-73fe-4247-95d8-04567c998988",
       "name": "Preparar Contexto",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1504,
+        2480,
         0
       ]
     },
@@ -143,7 +143,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1,
       "position": [
-        2528,
+        2680,
         0
       ]
     },
@@ -192,7 +192,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
       "position": [
-        2528,
+        2680,
         208
       ]
     },
@@ -241,7 +241,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
       "position": [
-        2656,
+        2800,
         208
       ]
     },
@@ -271,19 +271,19 @@
           "parameters": [
             {
               "name": "p_tenant_id",
-              "value": "={{ $('Normalizar Payload').item.json.tenant_id }}"
+              "value": "={{ $('Enriquecer Payload').item.json.tenant_id }}"
             },
             {
               "name": "p_conversation_id",
-              "value": "={{ $('Normalizar Payload').item.json.conversation_id }}"
+              "value": "={{ $('Enriquecer Payload').item.json.conversation_id }}"
             },
             {
               "name": "p_customer_id",
-              "value": "={{ $('Normalizar Payload').item.json.customer_id }}"
+              "value": "={{ $('Enriquecer Payload').item.json.customer_id }}"
             },
             {
               "name": "p_channel_id",
-              "value": "={{ $('Normalizar Payload').item.json.channel_id }}"
+              "value": "={{ $('Enriquecer Payload').item.json.channel_id }}"
             },
             {
               "name": "p_content_text",
@@ -302,7 +302,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        2752,
+        2880,
         0
       ]
     },
@@ -319,7 +319,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        3184,
+        3280,
         0
       ]
     },
@@ -352,7 +352,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        2400,
+        2560,
         224
       ],
       "id": "b64f8718-b9ca-40bb-b211-fd855b8137f2",
@@ -403,7 +403,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2960,
+        3080,
         0
       ],
       "id": "2758f50c-fa8e-40f3-9cb7-ed8c8a000903",
@@ -436,7 +436,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1440,
+        1680,
         0
       ],
       "id": "f1c8061a-9d9e-4d8a-a93c-697d656a140e",
@@ -483,7 +483,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2096,
+        2280,
         0
       ],
       "id": "d338bf33-c574-40e4-931a-730ef12842d8",
@@ -536,7 +536,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        640,
+        880,
         0
       ]
     },
@@ -558,7 +558,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        840,
+        1080,
         -200
       ]
     },
@@ -594,7 +594,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1040,
+        1280,
         -200
       ],
       "credentials": {
@@ -613,8 +613,62 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1240,
+        1480,
         -200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_n8n_get_latest_message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_ANON_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_ANON_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_conversation_id",
+              "value": "={{ $('Normalizar Payload').item.json.conversation_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cc000001-0000-0000-0000-000000000001",
+      "name": "Buscar Dados Mensagem",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Normalizar Payload').first().json;\nconst msg  = $input.first().json || {};\n\n// Prefer values from DB (msg) over the webhook payload (base)\nreturn [{ json: {\n  ...base,\n  content_type:       msg.content_type       || base.content_type       || 'text',\n  media_url:          msg.media_url          || base.media_url          || null,\n  transcription_text: msg.transcription_text || base.transcription_text || null,\n  media_duration_sec: msg.media_duration_sec || base.media_duration_sec || null,\n  content_text:       msg.content_text       || base.content_text       || '',\n  customer_name:      msg.customer_name      || base.customer_name      || 'Cliente',\n  customer_phone:     msg.customer_phone     || base.customer_phone     || '',\n}}];"
+      },
+      "id": "cc000001-0000-0000-0000-000000000002",
+      "name": "Enriquecer Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
       ]
     }
   ],
@@ -635,7 +689,7 @@
       "main": [
         [
           {
-            "node": "É Áudio?",
+            "node": "Buscar Dados Mensagem",
             "type": "main",
             "index": 0
           }
@@ -819,6 +873,28 @@
         [
           {
             "node": "Buscar Perfil Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Dados Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Enriquecer Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enriquecer Payload": {
+      "main": [
+        [
+          {
+            "node": "É Áudio?",
             "type": "main",
             "index": 0
           }
