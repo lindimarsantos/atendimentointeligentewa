@@ -113,7 +113,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        2080,
+        2180,
         0
       ]
     },
@@ -126,7 +126,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2480,
+        2580,
         0
       ]
     },
@@ -143,7 +143,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1,
       "position": [
-        2680,
+        2780,
         0
       ]
     },
@@ -192,7 +192,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
       "position": [
-        2680,
+        2780,
         208
       ]
     },
@@ -241,7 +241,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
       "position": [
-        2800,
+        2900,
         208
       ]
     },
@@ -302,7 +302,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        2880,
+        2980,
         0
       ]
     },
@@ -319,7 +319,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        3280,
+        3380,
         0
       ]
     },
@@ -352,7 +352,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        2560,
+        2660,
         224
       ],
       "id": "b64f8718-b9ca-40bb-b211-fd855b8137f2",
@@ -403,7 +403,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3080,
+        3180,
         0
       ],
       "id": "2758f50c-fa8e-40f3-9cb7-ed8c8a000903",
@@ -483,7 +483,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2280,
+        2380,
         0
       ],
       "id": "d338bf33-c574-40e4-931a-730ef12842d8",
@@ -670,6 +670,19 @@
         720,
         0
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Buscar Histórico retorna N mensagens — reduz para 1 item\n// para que os nós seguintes rodem uma única vez por execução.\n// Preparar Contexto lê todas as mensagens via $('Buscar Histórico').all()\nreturn [{ json: { trigger: true } }];"
+      },
+      "id": "dd000001-0000-0000-0000-000000000001",
+      "name": "Limitar Histórico",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ]
     }
   ],
   "pinData": {},
@@ -700,7 +713,7 @@
       "main": [
         [
           {
-            "node": "Buscar Config IA",
+            "node": "Limitar Histórico",
             "type": "main",
             "index": 0
           }
@@ -895,6 +908,17 @@
         [
           {
             "node": "É Áudio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limitar Histórico": {
+      "main": [
+        [
+          {
+            "node": "Buscar Config IA",
             "type": "main",
             "index": 0
           }
