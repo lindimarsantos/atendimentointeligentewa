@@ -113,7 +113,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        2080,
+        2180,
         0
       ]
     },
@@ -126,7 +126,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2480,
+        2580,
         0
       ]
     },
@@ -143,7 +143,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1,
       "position": [
-        2680,
+        2780,
         0
       ]
     },
@@ -192,7 +192,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
       "position": [
-        2680,
+        2780,
         208
       ]
     },
@@ -241,7 +241,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1,
       "position": [
-        2800,
+        2900,
         208
       ]
     },
@@ -302,7 +302,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        2880,
+        2980,
         0
       ]
     },
@@ -319,7 +319,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        3280,
+        3380,
         0
       ]
     },
@@ -352,7 +352,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        2560,
+        2660,
         224
       ],
       "id": "b64f8718-b9ca-40bb-b211-fd855b8137f2",
@@ -403,7 +403,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3080,
+        3180,
         0
       ],
       "id": "2758f50c-fa8e-40f3-9cb7-ed8c8a000903",
@@ -456,7 +456,7 @@
         "headerParameters": {
           "parameters": [
             {
-              "name": "apikey ",
+              "name": "apikey",
               "value": "YOUR_SUPABASE_ANON_KEY"
             },
             {
@@ -483,7 +483,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2280,
+        2380,
         0
       ],
       "id": "d338bf33-c574-40e4-931a-730ef12842d8",
@@ -543,7 +543,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $('Normalizar Payload').item.json.media_url }}",
+        "url": "={{ $json.media_url }}",
         "options": {
           "response": {
             "response": {
@@ -606,7 +606,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload       = $('Normalizar Payload').first().json;\nconst transcription = $input.first().json?.text || '';\nreturn [{ json: { ...payload, transcription_text: transcription } }];"
+        "jsCode": "const transcription = $input.first().json?.text || '';\nconst base = $('Enriquecer Payload').first().json;\nreturn [{ json: { ...base, transcription_text: transcription } }];"
       },
       "id": "bb000001-0000-0000-0000-000000000004",
       "name": "Aplicar Transcrição",
@@ -660,7 +660,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const base = $('Normalizar Payload').first().json;\nconst msg  = $input.first().json || {};\n\n// Prefer values from DB (msg) over the webhook payload (base)\nreturn [{ json: {\n  ...base,\n  content_type:       msg.content_type       || base.content_type       || 'text',\n  media_url:          msg.media_url          || base.media_url          || null,\n  transcription_text: msg.transcription_text || base.transcription_text || null,\n  media_duration_sec: msg.media_duration_sec || base.media_duration_sec || null,\n  content_text:       msg.content_text       || base.content_text       || '',\n  customer_name:      msg.customer_name      || base.customer_name      || 'Cliente',\n  customer_phone:     msg.customer_phone     || base.customer_phone     || '',\n}}];"
+        "jsCode": "const base = $('Normalizar Payload').first().json;\nconst msg  = $input.first().json || {};\n\n// Detecta content_type pela extensão da URL se o banco retornou 'text'\nlet contentType = msg.content_type || base.content_type || 'text';\nconst url = msg.media_url || base.media_url || '';\nif (url && contentType === 'text') {\n  const ext = url.split('?')[0].toLowerCase().split('.').pop();\n  if (['ogg','opus','mp3','m4a','wav','aac','oga'].includes(ext)) contentType = 'audio';\n  else if (['mp4','avi','mov','mkv','webm'].includes(ext))         contentType = 'video';\n  else if (['jpg','jpeg','png','gif','webp','heic'].includes(ext)) contentType = 'image';\n  else if (['pdf','doc','docx','xls','xlsx','ppt'].includes(ext))  contentType = 'document';\n}\n\nreturn [{ json: {\n  ...base,\n  content_type:       contentType,\n  media_url:          msg.media_url           || base.media_url          || null,\n  transcription_text: msg.transcription_text  || base.transcription_text || null,\n  media_duration_sec: msg.media_duration_sec  || base.media_duration_sec || null,\n  content_text:       msg.content_text        || base.content_text       || '',\n  file_name:          null,\n  customer_name:      msg.customer_name       || base.customer_name      || 'Cliente',\n  customer_phone:     msg.customer_phone      || base.customer_phone     || '',\n}}];\n"
       },
       "id": "cc000001-0000-0000-0000-000000000002",
       "name": "Enriquecer Payload",
@@ -670,6 +670,192 @@
         720,
         0
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Buscar Histórico retorna N mensagens — reduz para 1 item\n// para que os nós seguintes rodem uma única vez por execução.\n// Preparar Contexto lê todas as mensagens via $('Buscar Histórico').all()\nreturn [{ json: { trigger: true } }];"
+      },
+      "id": "dd000001-0000-0000-0000-000000000001",
+      "name": "Limitar Histórico",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "id": "b9e112bb-9b17-42aa-ba38-bbcfce8c4df1",
+      "name": "Buscar Config Voz",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2980,
+        280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_n8n_get_voice_config",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_ANON_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_ANON_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_conversation_id",
+              "value": "={{ $('Normalizar Payload').item.json.conversation_id }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "037f8bd7-7c80-44ec-8007-eb23c81554d7",
+      "name": "É Voz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3200,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "voice-enabled",
+              "leftValue": "={{ $json.voice_enabled }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "was-audio",
+              "leftValue": "={{ $('Enriquecer Payload').first().json.content_type }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "has-voice-id",
+              "leftValue": "={{ $json.voice_external_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "e1456a85-be0f-4ecf-b156-01adca413327",
+      "name": "Gerar Áudio ElevenLabs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        3420,
+        280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $('Buscar Config Voz').first().json.voice_external_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $('Buscar Config Voz').first().json.elevenlabs_api_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "audio/mpeg"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": {{ JSON.stringify($('AI Agent').first().json.output) }},\n  \"model_id\": \"{{ $('Buscar Config Voz').first().json.model_id }}\",\n  \"voice_settings\": {\n    \"stability\": {{ $('Buscar Config Voz').first().json.stability }},\n    \"similarity_boost\": {{ $('Buscar Config Voz').first().json.similarity_boost }}\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "45e385ce-5402-4c5a-9562-45e34483e799",
+      "name": "Converter Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3640,
+        280
+      ],
+      "parameters": {
+        "jsCode": "// Extrai o áudio binário retornado pelo ElevenLabs e converte para base64\nconst item = $input.first();\nconst binaryKey = Object.keys(item.binary || {})[0];\nif (!binaryKey) throw new Error('ElevenLabs não retornou áudio binário');\n\nconst audioBase64 = item.binary[binaryKey].data;\nreturn [{ json: { audio_base64: audioBase64 } }];"
+      }
+    },
+    {
+      "id": "79cc8a66-ba50-4dc4-8a2b-d53aa6e14a94",
+      "name": "Enviar Voz WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        3860,
+        280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.z-api.io/instances/{{ $('Buscar Config Voz').first().json.zapi_instance_id }}/token/{{ $('Buscar Config Voz').first().json.zapi_token }}/send-ptt-audio",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"phone\": \"{{ $('Normalizar Payload').first().json.customer_phone }}\",\n  \"audio\": \"{{ $json.audio_base64 }}\",\n  \"delay\": 1200\n}",
+        "options": {}
+      }
     }
   ],
   "pinData": {},
@@ -700,7 +886,7 @@
       "main": [
         [
           {
-            "node": "Buscar Config IA",
+            "node": "Limitar Histórico",
             "type": "main",
             "index": 0
           }
@@ -767,6 +953,11 @@
         [
           {
             "node": "Registrar Interação IA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Buscar Config Voz",
             "type": "main",
             "index": 0
           }
@@ -895,6 +1086,62 @@
         [
           {
             "node": "É Áudio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limitar Histórico": {
+      "main": [
+        [
+          {
+            "node": "Buscar Config IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Config Voz": {
+      "main": [
+        [
+          {
+            "node": "É Voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Voz?": {
+      "main": [
+        [
+          {
+            "node": "Gerar Áudio ElevenLabs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Gerar Áudio ElevenLabs": {
+      "main": [
+        [
+          {
+            "node": "Converter Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Converter Base64": {
+      "main": [
+        [
+          {
+            "node": "Enviar Voz WhatsApp",
             "type": "main",
             "index": 0
           }
