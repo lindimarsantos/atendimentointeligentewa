@@ -841,19 +841,23 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "=https://api.z-api.io/instances/{{ $('Buscar Config Voz').first().json.zapi_instance_id }}/token/{{ $('Buscar Config Voz').first().json.zapi_token }}/send-ptt-audio",
+        "url": "=https://api.z-api.io/instances/{{ $vars.ZAPI_INSTANCE_ID }}/token/{{ $vars.ZAPI_TOKEN }}/send-audio",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "Client-Token",
+              "value": "={{ $vars.ZAPI_CLIENT_TOKEN }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"phone\": \"{{ $('Normalizar Payload').first().json.customer_phone }}\",\n  \"audio\": \"{{ $json.audio_base64 }}\",\n  \"delay\": 1200\n}",
+        "jsonBody": "={\n  \"phone\": \"{{ $('Normalizar Payload').first().json.customer_phone }}\",\n  \"audio\": \"data:audio/mpeg;base64,{{ $json.audio_base64 }}\",\n  \"delayMessage\": 1\n}",
         "options": {}
       }
     }
