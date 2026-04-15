@@ -848,12 +848,16 @@
             {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "Client-Token",
+              "value": "={{ $vars.ZAPI_CLIENT_TOKEN }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"phone\": \"{{ $('Normalizar Payload').first().json.customer_phone }}\",\n  \"audio\": \"data:audio/mpeg;base64,{{ $json.audio_base64 }}\",\n  \"delay\": 1200\n}",
+        "jsonBody": "={\n  \"phone\": \"{{ $('Normalizar Payload').first().json.customer_phone }}\",\n  \"audio\": \"data:audio/mpeg;base64,{{ $json.audio_base64 }}\",\n  \"delayMessage\": 1\n}",
         "options": {}
       }
     }
