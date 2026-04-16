@@ -23,8 +23,12 @@ const Tooltip         = dynamic(() => import('recharts').then(m => m.Tooltip),  
 const Legend          = dynamic(() => import('recharts').then(m => m.Legend),          { ssr: false })
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
 
-function fmtDay(d: string) {
-  return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+function fmtDay(dateStr: unknown): string {
+  if (!dateStr) return ''
+  const s = String(dateStr).slice(0, 10)
+  const d = new Date(s + 'T12:00:00')
+  if (isNaN(d.getTime())) return s
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
 function pct(n: number) { return `${(n * 100).toFixed(1)}%` }

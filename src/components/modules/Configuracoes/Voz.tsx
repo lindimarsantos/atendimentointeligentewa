@@ -20,9 +20,10 @@ export function Voz() {
   const [modal, setModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [form, setForm] = useState<Partial<VoiceProfile> & { api_key?: string }>({
+  const [form, setForm] = useState<Partial<VoiceProfile> & { api_key?: string; send_text_with_audio?: boolean }>({
     name: '', provider: 'elevenlabs', voice_external_id: '',
     language_code: 'pt-BR', gender: 'female', is_default: false, api_key: '',
+    send_text_with_audio: true,
   })
 
   const load = () => {
@@ -39,12 +40,17 @@ export function Voz() {
     setForm({
       name: '', provider: 'elevenlabs', voice_external_id: '',
       language_code: 'pt-BR', gender: 'female', is_default: false, api_key: '',
+      send_text_with_audio: true,
     })
     setModal(true)
   }
 
   const openEdit = (p: VoiceProfile) => {
-    setForm({ ...p, api_key: (p.settings_jsonb?.api_key as string) ?? '' })
+    setForm({
+      ...p,
+      api_key: (p.settings_jsonb?.api_key as string) ?? '',
+      send_text_with_audio: (p.settings_jsonb?.send_text_with_audio as boolean) ?? true,
+    })
     setModal(true)
   }
 
@@ -57,12 +63,13 @@ export function Voz() {
       toast('Preencha a API Key do ElevenLabs', 'error')
       return
     }
-    // Monta settings_jsonb com api_key + defaults do modelo
+    // Monta settings_jsonb com api_key + defaults do modelo + opção de texto
     const settings_jsonb = {
       ...(form.settings_jsonb ?? {}),
       model_id: 'eleven_multilingual_v2',
       stability: 0.5,
       similarity_boost: 0.75,
+      send_text_with_audio: form.send_text_with_audio ?? true,
       ...(form.api_key ? { api_key: form.api_key } : {}),
     }
     setSaving(true)
@@ -197,6 +204,12 @@ export function Voz() {
               ]}
             />
           </div>
+          <Toggle
+            checked={form.send_text_with_audio ?? true}
+            onChange={(v) => setForm((p) => ({ ...p, send_text_with_audio: v }))}
+            label="Enviar texto junto com o áudio"
+            description="Desativado: ao responder por voz, envia apenas o áudio (sem a mensagem de texto)"
+          />
           <Toggle
             checked={form.is_default ?? false}
             onChange={(v) => setForm((p) => ({ ...p, is_default: v }))}
