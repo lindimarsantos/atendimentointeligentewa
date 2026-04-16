@@ -100,6 +100,15 @@ export function MensagensCanal() {
           hint="Enviada quando a conversa é transferida para atendimento humano"
         />
 
+        <Textarea
+          label="Follow-up de agendamento (sem resposta)"
+          rows={3}
+          value={data.scheduling_followup_message ?? ''}
+          onChange={(e) => set('scheduling_followup_message', e.target.value)}
+          placeholder="Olá! 😊 Ainda estou por aqui — gostaria de saber se algum dos horários que sugeri funciona para você, ou se preferir posso verificar outras opções disponíveis. É só me dizer!"
+          hint="Enviada automaticamente 2–4h após a IA sugerir horários sem receber resposta do cliente"
+        />
+
         {/* Variáveis inline — visível apenas em telas menores */}
         <div className="xl:hidden">
           <VariablesReference />

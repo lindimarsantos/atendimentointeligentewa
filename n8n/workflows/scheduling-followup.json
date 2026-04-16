@@ -16,7 +16,10 @@
       "name": "Cron - 2h",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [60, 300]
+      "position": [
+        60,
+        300
+      ]
     },
     {
       "parameters": {
@@ -58,7 +61,10 @@
       "name": "Buscar Conversas Sem Resposta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [300, 300]
+      "position": [
+        300,
+        300
+      ]
     },
     {
       "parameters": {
@@ -87,7 +93,10 @@
       "name": "Tem Conversas?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [520, 300]
+      "position": [
+        520,
+        300
+      ]
     },
     {
       "parameters": {},
@@ -95,7 +104,10 @@
       "name": "Sem Conversas",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [740, 440]
+      "position": [
+        740,
+        440
+      ]
     },
     {
       "parameters": {
@@ -106,17 +118,23 @@
       "name": "Loop Conversas",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [740, 300]
+      "position": [
+        740,
+        300
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst name = (item.customer_name || '').split(' ')[0] || '';\nconst greeting = name ? `Olá, ${name}!` : 'Olá!';\nconst message = `${greeting} 😊 Ainda estou por aqui — gostaria de saber se algum dos horários que sugeri funciona para você, ou se preferir posso verificar outras opções disponíveis. É só me dizer!`;\nreturn [{ json: { ...item, followup_message: message } }];"
+        "jsCode": "const item = $input.first().json;\nconst name = (item.customer_name || '').split(' ')[0] || '';\nconst template = item.followup_message_template || '';\n// Replace {{nome}} placeholder if present, otherwise prepend greeting\nlet message;\nif (template.includes('{{nome}}')) {\n  message = template.replace(/{{nome}}/g, name);\n} else if (name) {\n  message = 'Olá, ' + name + '! ' + template;\n} else {\n  message = template;\n}\nreturn [{ json: { ...item, followup_message: message } }];"
       },
       "id": "montar-mensagem",
       "name": "Montar Mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [960, 300]
+      "position": [
+        960,
+        300
+      ]
     },
     {
       "parameters": {
@@ -144,40 +162,85 @@
       "name": "Enviar Follow-up WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1180, 300]
+      "position": [
+        1180,
+        300
+      ]
     }
   ],
   "connections": {
     "Cron - 2h": {
       "main": [
-        [{ "node": "Buscar Conversas Sem Resposta", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Buscar Conversas Sem Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Buscar Conversas Sem Resposta": {
       "main": [
-        [{ "node": "Tem Conversas?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Tem Conversas?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Tem Conversas?": {
       "main": [
-        [{ "node": "Loop Conversas", "type": "main", "index": 0 }],
-        [{ "node": "Sem Conversas", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Loop Conversas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sem Conversas",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Loop Conversas": {
       "main": [
-        [{ "node": "Montar Mensagem", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Montar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     },
     "Montar Mensagem": {
       "main": [
-        [{ "node": "Enviar Follow-up WhatsApp", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Enviar Follow-up WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Enviar Follow-up WhatsApp": {
       "main": [
-        [{ "node": "Loop Conversas", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Loop Conversas",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },

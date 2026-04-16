@@ -454,6 +454,7 @@ export async function updateChannelSettings(data: Partial<ChannelSettings>): Pro
     p_handoff_message: data.handoff_message,
     p_buffer_active: data.buffer_active,
     p_typing_simulation: data.typing_simulation,
+    p_scheduling_followup_message: data.scheduling_followup_message,
   })
 }
 
