@@ -100,6 +100,24 @@ export function MensagensCanal() {
           hint="Enviada quando a conversa é transferida para atendimento humano"
         />
 
+        <Textarea
+          label="1º lembrete de agendamento (sem resposta)"
+          rows={3}
+          value={data.scheduling_followup_message ?? ''}
+          onChange={(e) => set('scheduling_followup_message', e.target.value)}
+          placeholder="Olá! 😊 Ainda estou por aqui — gostaria de saber se algum dos horários que sugeri funciona para você, ou se preferir posso verificar outras opções. É só me dizer!"
+          hint="Enviado automaticamente após o 1º período de silêncio. Use {{nome}} para o nome do cliente."
+        />
+
+        <Textarea
+          label="2º lembrete de agendamento (ainda sem resposta)"
+          rows={3}
+          value={data.scheduling_followup_message_2 ?? ''}
+          onChange={(e) => set('scheduling_followup_message_2', e.target.value)}
+          placeholder="Oi! 😊 Só passando para saber se você conseguiu decidir sobre o agendamento. Caso prefira, posso buscar outros horários disponíveis. Qualquer coisa, é só falar!"
+          hint="Enviado após o 2º período de silêncio. Após este, para até o cliente responder."
+        />
+
         {/* Variáveis inline — visível apenas em telas menores */}
         <div className="xl:hidden">
           <VariablesReference />
