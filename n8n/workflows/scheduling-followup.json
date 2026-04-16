@@ -46,12 +46,12 @@
         "bodyParameters": {
           "parameters": [
             {
-              "name": "p_hours_min",
+              "name": "p_hours_first",
               "value": "2"
             },
             {
-              "name": "p_hours_max",
-              "value": "4"
+              "name": "p_hours_second",
+              "value": "24"
             }
           ]
         },

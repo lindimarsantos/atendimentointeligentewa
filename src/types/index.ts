@@ -355,6 +355,7 @@ export interface ChannelSettings {
   out_of_hours_message?: string
   handoff_message?: string
   scheduling_followup_message?: string
+  scheduling_followup_message_2?: string
   buffer_active: boolean
   typing_simulation: boolean
   updated_at: string
