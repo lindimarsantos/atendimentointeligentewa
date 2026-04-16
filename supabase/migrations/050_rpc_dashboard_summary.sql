@@ -9,6 +9,8 @@
 --   avg_resolution      = tempo médio do início até resolução
 -- ============================================================
 
+DROP FUNCTION IF EXISTS public.rpc_dashboard_summary(uuid);
+
 CREATE OR REPLACE FUNCTION public.rpc_dashboard_summary(p_tenant_id uuid)
 RETURNS json
 LANGUAGE plpgsql
