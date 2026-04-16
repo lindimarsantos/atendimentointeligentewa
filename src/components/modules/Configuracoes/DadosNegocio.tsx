@@ -6,11 +6,11 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import {
-  listServices, listProfessionals, getBusinessHours,
+  listServices, listProfessionals,
   getBusinessContact, updateBusinessContact,
   getBusinessProfile, updateBusinessProfile,
 } from '@/lib/api'
-import type { Service, Professional, BusinessHour, BusinessContact, BusinessProfile } from '@/types'
+import type { Service, Professional, BusinessContact, BusinessProfile } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { Textarea } from '@/components/ui/Input'
 import {
@@ -19,8 +19,6 @@ import {
   Linkedin, Music2, Star, Building2,
 } from 'lucide-react'
 import Link from 'next/link'
-
-const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
 // ─── Profile form ─────────────────────────────────────────────────────────────
 
@@ -316,11 +314,9 @@ function ContactDisplay({
 export function DadosNegocio() {
   const [services,      setServices]      = useState<Service[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
-  const [hours,         setHours]         = useState<BusinessHour[]>([])
   const [contact,       setContact]       = useState<BusinessContact>({})
   const [profile,       setProfile]       = useState<BusinessProfile>({})
   const [loading,       setLoading]       = useState(true)
-  const [hoursError,    setHoursError]    = useState<string | null>(null)
   const [editingContact, setEditingContact] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
 
@@ -328,14 +324,11 @@ export function DadosNegocio() {
     Promise.allSettled([
       listServices(),
       listProfessionals(),
-      getBusinessHours(),
       getBusinessContact(),
       getBusinessProfile(),
-    ]).then(([s, p, h, c, pr]) => {
+    ]).then(([s, p, c, pr]) => {
       if (s.status === 'fulfilled') setServices(s.value)
       if (p.status === 'fulfilled') setProfessionals(p.value)
-      if (h.status === 'fulfilled') setHours(h.value)
-      else setHoursError((h as PromiseRejectedResult).reason?.message ?? 'Erro ao carregar horários')
       if (c.status === 'fulfilled') {
         setContact(c.value)
         const hasData = Object.values(c.value).some((v) => v && String(v).trim())
@@ -348,8 +341,6 @@ export function DadosNegocio() {
       }
     }).finally(() => setLoading(false))
   }, [])
-
-  const sortedHours = [...hours].sort((a, b) => a.day_of_week - b.day_of_week)
 
   if (loading)
     return (
@@ -502,49 +493,6 @@ export function DadosNegocio() {
         )}
       </Card>
 
-      {/* Business hours */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <span className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-green-500" />
-              Horário de funcionamento
-            </span>
-          </CardTitle>
-          <Link
-            href="/agenda"
-            className="flex items-center gap-1 text-xs text-brand-600 hover:underline"
-          >
-            Gerenciar <ExternalLink className="h-3 w-3" />
-          </Link>
-        </CardHeader>
-        {hoursError ? (
-          <div className="flex items-center gap-2 text-amber-700 p-3 bg-amber-50 rounded-lg text-sm">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            Horários indisponíveis — configure via módulo Agenda.
-          </div>
-        ) : sortedHours.length === 0 ? (
-          <p className="text-sm text-gray-400">Horários não configurados</p>
-        ) : (
-          <ul className="space-y-1">
-            {sortedHours.map((h) => (
-              <li key={h.id} className="flex items-center gap-3 py-1.5">
-                <span className="w-20 text-sm text-gray-600">{DAYS[h.day_of_week]}</span>
-                {h.is_open ? (
-                  <span className="text-sm text-gray-900">
-                    {h.open_time} – {h.close_time}
-                  </span>
-                ) : (
-                  <span className="text-sm text-gray-400 italic">Fechado</span>
-                )}
-                <Badge variant={h.is_open ? 'success' : 'default'}>
-                  {h.is_open ? 'Aberto' : 'Fechado'}
-                </Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
     </div>
   )
 }
