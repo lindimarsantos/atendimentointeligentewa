@@ -13,7 +13,7 @@ import {
   ExternalLink, Info, Smartphone, Webhook,
 } from 'lucide-react'
 
-const WEBHOOK_URL = 'https://jxqnfzujsgtzzjabvplm.supabase.co/functions/v1/whatsapp-webhook'
+const SUPABASE_WEBHOOK_URL = 'https://jxqnfzujsgtzzjabvplm.supabase.co/functions/v1/whatsapp-webhook'
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false)
@@ -49,6 +49,7 @@ export function IntegracaoWhatsApp() {
   const [instanceId, setInstanceId] = useState('')
   const [token, setToken] = useState('')
   const [phone, setPhone] = useState('')
+  const [n8nUrl, setN8nUrl] = useState('')
   const [isActive, setIsActive] = useState(true)
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export function IntegracaoWhatsApp() {
           setInstanceId(ch.external_account_id ?? '')
           setToken(ch.config_jsonb?.zapi_token ?? '')
           setPhone(ch.config_jsonb?.phone_number ?? '')
+          setN8nUrl(ch.webhook_url ?? '')
           setIsActive(ch.is_active)
         }
       })
@@ -77,6 +79,7 @@ export function IntegracaoWhatsApp() {
         instance_id:  instanceId.trim(),
         zapi_token:   token.trim(),
         phone_number: phone.trim() || undefined,
+        webhook_url:  n8nUrl.trim() || undefined,
         is_active:    isActive,
       })
       toast('Configurações do WhatsApp salvas')
@@ -186,29 +189,56 @@ export function IntegracaoWhatsApp() {
         </div>
       </Card>
 
-      {/* Webhook URL */}
+      {/* Webhook URLs */}
       <Card>
         <h3 className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
           <Webhook className="h-4 w-4 text-brand-600" />
-          URL do Webhook
+          Configuração de Webhooks Z-API
         </h3>
-        <p className="text-xs text-gray-500 mb-3">
-          Configure esta URL no painel Z-API em{' '}
-          <span className="font-medium text-gray-700">Configurações → Webhooks → Ao receber</span>.
+        <p className="text-xs text-gray-500 mb-4">
+          Configure dois webhooks distintos no painel Z-API em{' '}
+          <span className="font-medium text-gray-700">Configurações → Webhooks</span>.
         </p>
 
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-          <code className="flex-1 text-xs text-gray-700 break-all font-mono">
-            {WEBHOOK_URL}
-          </code>
-          <CopyButton value={WEBHOOK_URL} />
+        {/* Ao receber → n8n */}
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-gray-700 mb-1">
+            Ao receber <span className="font-normal text-gray-500">(mensagens recebidas dos clientes → n8n)</span>
+          </p>
+          <div className="space-y-2">
+            <Input
+              value={n8nUrl}
+              onChange={(e) => setN8nUrl(e.target.value)}
+              placeholder="https://seu-n8n.exemplo.com/webhook/wa-inbound"
+              hint="URL do webhook de entrada do n8n. Salve após preencher."
+            />
+            {n8nUrl && (
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <code className="flex-1 text-xs text-gray-700 break-all font-mono">{n8nUrl}</code>
+                <CopyButton value={n8nUrl} />
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="mt-3 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-          <p className="text-xs text-amber-800">
-            Após configurar o webhook na Z-API, as mensagens dos clientes serão recebidas e
-            processadas automaticamente pela IA.
+        {/* Ao enviar → Supabase */}
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-gray-700 mb-1">
+            Ao enviar <span className="font-normal text-gray-500">(confirmação de envio → sistema)</span>
+          </p>
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+            <code className="flex-1 text-xs text-gray-700 break-all font-mono">
+              {SUPABASE_WEBHOOK_URL}
+            </code>
+            <CopyButton value={SUPABASE_WEBHOOK_URL} />
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+          <p className="text-xs text-blue-800">
+            <strong>Resumo:</strong> &ldquo;Ao receber&rdquo; aponta para o n8n (processa mensagens e aciona a IA).
+            &ldquo;Ao enviar&rdquo; aponta para o Supabase (registra status de entrega).
           </p>
         </div>
       </Card>
