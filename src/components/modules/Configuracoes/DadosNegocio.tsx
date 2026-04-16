@@ -469,6 +469,12 @@ export function DadosNegocio() {
               Profissionais ({professionals.length})
             </span>
           </CardTitle>
+          <Link
+            href="/servicos"
+            className="flex items-center gap-1 text-xs text-brand-600 hover:underline"
+          >
+            Gerenciar <ExternalLink className="h-3 w-3" />
+          </Link>
         </CardHeader>
         {professionals.length === 0 ? (
           <p className="text-sm text-gray-400">Nenhum profissional cadastrado</p>
@@ -505,6 +511,12 @@ export function DadosNegocio() {
               Horário de funcionamento
             </span>
           </CardTitle>
+          <Link
+            href="/agenda"
+            className="flex items-center gap-1 text-xs text-brand-600 hover:underline"
+          >
+            Gerenciar <ExternalLink className="h-3 w-3" />
+          </Link>
         </CardHeader>
         {hoursError ? (
           <div className="flex items-center gap-2 text-amber-700 p-3 bg-amber-50 rounded-lg text-sm">
