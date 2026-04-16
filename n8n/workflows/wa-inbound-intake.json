@@ -257,7 +257,7 @@
         "url": "https://n8n.atividadeweb.com.br/webhook/wa-ai-agent",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"tenant_id\": \"{{ $('Normalizar Payload').item.json.tenant_id }}\",\n  \"customer_id\": \"{{ $('Upsert Cliente').item.json.customer_id }}\",\n  \"conversation_id\": \"{{ $('Abrir Conversa').item.json.conversation_id }}\",\n  \"channel_id\": \"58c4062a-9fe9-4ae2-abff-5a8b5236a79e\",\n  \"message_id\": \"{{ $('Registrar Inbound').item.json.message_id }}\",\n  \"content_text\": \"{{ $('HTTP Request').item.json.combined_text || $('Normalizar Payload').item.json.content_text }}\",\n  \"content_type\": \"{{ $('Normalizar Payload').item.json.message_type }}\",\n  \"media_url\": \"{{ $('Normalizar Payload').item.json.media_url }}\",\n  \"customer_name\": \"{{ $('Normalizar Payload').item.json.full_name }}\",\n  \"customer_phone\": \"{{ $('Normalizar Payload').item.json.phone_e164 }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({\n  tenant_id:       $('Normalizar Payload').item.json.tenant_id,\n  customer_id:     $('Upsert Cliente').item.json.customer_id,\n  conversation_id: $('Abrir Conversa').item.json.conversation_id,\n  channel_id:      '58c4062a-9fe9-4ae2-abff-5a8b5236a79e',\n  message_id:      $('Registrar Inbound').item.json.message_id,\n  content_text:    $('HTTP Request').item.json.combined_text || $('Normalizar Payload').item.json.content_text,\n  content_type:    $('Normalizar Payload').item.json.message_type,\n  media_url:       $('Normalizar Payload').item.json.media_url,\n  customer_name:   $('Normalizar Payload').item.json.full_name,\n  customer_phone:  $('Normalizar Payload').item.json.phone_e164\n}) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
