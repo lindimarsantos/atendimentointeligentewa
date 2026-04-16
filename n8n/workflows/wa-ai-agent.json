@@ -287,7 +287,7 @@
             },
             {
               "name": "p_content_text",
-              "value": "={{ $json.output }}"
+              "value": "={{ $('Formatar Saída').first().json.output }}"
             },
             {
               "name": "p_delay_seconds",
@@ -302,7 +302,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        2980,
+        3080,
         0
       ]
     },
@@ -319,7 +319,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        3380,
+        3480,
         0
       ]
     },
@@ -390,7 +390,7 @@
             },
             {
               "name": "p_reply_text",
-              "value": "={{ $('AI Agent').first().json.output }}"
+              "value": "={{ $('Formatar Saída').first().json.output }}"
             },
             {
               "name": "p_decision_type",
@@ -403,7 +403,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3180,
+        3280,
         0
       ],
       "id": "2758f50c-fa8e-40f3-9cb7-ed8c8a000903",
@@ -807,7 +807,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"text\": {{ JSON.stringify($('AI Agent').first().json.output) }},\n  \"model_id\": \"{{ $('Buscar Config Voz').first().json.model_id }}\",\n  \"voice_settings\": {\n    \"stability\": {{ $('Buscar Config Voz').first().json.stability }},\n    \"similarity_boost\": {{ $('Buscar Config Voz').first().json.similarity_boost }}\n  }\n}",
+        "jsonBody": "={\n  \"text\": {{ JSON.stringify($('Formatar Saída').first().json.output) }},\n  \"model_id\": \"{{ $('Buscar Config Voz').first().json.model_id }}\",\n  \"voice_settings\": {\n    \"stability\": {{ $('Buscar Config Voz').first().json.stability }},\n    \"similarity_boost\": {{ $('Buscar Config Voz').first().json.similarity_boost }}\n  }\n}",
         "options": {
           "response": {
             "response": {
@@ -1064,6 +1064,19 @@
         },
         "optimizeResponse": true
       }
+    },
+    {
+      "id": "format-output-001",
+      "name": "Formatar Saída",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Converte markdown para formatação WhatsApp\n// GPT tende a gerar **bold** e __italic__ — aqui normalizamos\nlet text = $('AI Agent').first().json.output || '';\n\n// **negrito** ou __negrito__ → *negrito* (WhatsApp)\ntext = text.replace(/\\*\\*(.+?)\\*\\*/gs, '*$1*');\ntext = text.replace(/__(.+?)__/gs, '_$1_');\n\n// ### Título → *Título* (sem # que não renderiza no WA)\ntext = text.replace(/^#{1,6}\\s+(.+)$/gm, '*$1*');\n\n// Remove > blockquote markers\ntext = text.replace(/^>\\s*/gm, '');\n\n// Remove --- e === separators\ntext = text.replace(/^[-=]{3,}$/gm, '');\n\n// Espaços em branco extras no início/fim\ntext = text.trim();\n\nreturn [{ json: { output: text } }];"
+      }
     }
   ],
   "pinData": {},
@@ -1149,7 +1162,7 @@
       "main": [
         [
           {
-            "node": "Enfileirar Resposta",
+            "node": "Formatar Saída",
             "type": "main",
             "index": 0
           }
@@ -1435,6 +1448,17 @@
           {
             "node": "AI Agent",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Saída": {
+      "main": [
+        [
+          {
+            "node": "Enfileirar Resposta",
+            "type": "main",
             "index": 0
           }
         ]
