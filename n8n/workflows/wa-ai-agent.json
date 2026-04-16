@@ -731,7 +731,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        3200,
+        3280,
         280
       ],
       "parameters": {
@@ -782,7 +782,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        3420,
+        3500,
         280
       ],
       "parameters": {
@@ -823,7 +823,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3640,
+        3720,
         280
       ],
       "parameters": {
@@ -836,7 +836,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        3860,
+        3940,
         280
       ],
       "parameters": {
@@ -1077,6 +1077,67 @@
       "parameters": {
         "jsCode": "// Converte markdown para formatação WhatsApp\n// GPT tende a gerar **bold** e __italic__ — aqui normalizamos\nlet text = $('AI Agent').first().json.output || '';\n\n// **negrito** ou __negrito__ → *negrito* (WhatsApp)\ntext = text.replace(/\\*\\*(.+?)\\*\\*/gs, '*$1*');\ntext = text.replace(/__(.+?)__/gs, '_$1_');\n\n// ### Título → *Título* (sem # que não renderiza no WA)\ntext = text.replace(/^#{1,6}\\s+(.+)$/gm, '*$1*');\n\n// Remove > blockquote markers\ntext = text.replace(/^>\\s*/gm, '');\n\n// Remove --- e === separators\ntext = text.replace(/^[-=]{3,}$/gm, '');\n\n// Espaços em branco extras no início/fim\ntext = text.trim();\n\nreturn [{ json: { output: text } }];"
       }
+    },
+    {
+      "id": "pular-texto-001",
+      "name": "Pular Texto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "voice-on",
+              "leftValue": "={{ $json.voice_enabled }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "is-audio",
+              "leftValue": "={{ $('Enriquecer Payload').first().json.content_type }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "has-voice-id",
+              "leftValue": "={{ $json.voice_external_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "no-text",
+              "leftValue": "={{ $json.send_text_with_audio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -1174,11 +1235,6 @@
         [
           {
             "node": "Registrar Interação IA",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Buscar Config Voz",
             "type": "main",
             "index": 0
           }
@@ -1328,6 +1384,11 @@
       "main": [
         [
           {
+            "node": "Pular Texto?",
+            "type": "main",
+            "index": 0
+          },
+          {
             "node": "É Voz?",
             "type": "main",
             "index": 0
@@ -1455,6 +1516,24 @@
     },
     "Formatar Saída": {
       "main": [
+        [
+          {
+            "node": "Buscar Config Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pular Texto?": {
+      "main": [
+        [
+          {
+            "node": "Registrar Interação IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Enfileirar Resposta",
