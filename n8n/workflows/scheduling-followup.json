@@ -166,6 +166,47 @@
         1180,
         300
       ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/rpc_n8n_mark_followup_sent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_conversation_id",
+              "value": "={{ $json.conversation_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "marcar-followup",
+      "name": "Marcar Follow-up Enviado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1400,
+        300
+      ]
     }
   ],
   "connections": {
@@ -233,6 +274,17 @@
       ]
     },
     "Enviar Follow-up WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Marcar Follow-up Enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Follow-up Enviado": {
       "main": [
         [
           {
