@@ -31,8 +31,11 @@ const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.Respons
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmtDay(dateStr: string) {
-  const d = new Date(dateStr + 'T12:00:00')
+function fmtDay(dateStr: unknown): string {
+  if (!dateStr) return ''
+  const s = String(dateStr).slice(0, 10)   // "YYYY-MM-DD" regardless of time suffix
+  const d = new Date(s + 'T12:00:00')
+  if (isNaN(d.getTime())) return s
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
