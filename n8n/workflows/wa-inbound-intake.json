@@ -1,0 +1,376 @@
+{
+  "name": "WA - Inbound Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wa-inbound",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "9cc8cc11-72ab-4045-871f-cf538c4df85f",
+      "name": "Webhook Z-API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-176, 64],
+      "webhookId": "wa-inbound-intake"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nconst phone = body?.phone || body?.from || body?.sender || '';\nconst messageId = body?.messageId || body?.id || body?.msgId || '';\nconst senderName = body?.senderName || body?.pushname || body?.notifyName || 'Desconhecido';\nconst rawType = body?.type || body?.messageType || 'text';\nconst textContent = body?.text?.message || body?.body || body?.caption || body?.message || '';\nconst mediaUrl = body?.image?.imageUrl || body?.audio?.audioUrl || body?.video?.videoUrl || body?.document?.documentUrl || null;\n\n// Mapeia tipo Z-API para enum interno\nconst typeMap = {\n  'text': 'text',\n  'ReceivedCallback': 'text',\n  'image': 'image',\n  'audio': 'audio',\n  'video': 'video',\n  'document': 'document',\n  'sticker': 'image',\n  'location': 'text',\n  'contact': 'text',\n  'interactive': 'interactive',\n  'button': 'interactive',\n  'list': 'interactive'\n};\nconst messageType = typeMap[rawType] || 'text';\n\nconst normalizePhone = (p) => {\n  if (!p) return null;\n  let cleaned = p.toString().replace(/[^0-9]/g, '');\n  if (!cleaned.startsWith('55')) cleaned = '55' + cleaned;\n  return '+' + cleaned;\n};\n\nconst phoneE164 = normalizePhone(phone);\n\nif (!phoneE164 || !messageId) {\n  throw new Error('Payload inválido: telefone ou messageId ausente');\n}\n\nreturn [{\n  json: {\n    tenant_id: '5518085b-42e9-4608-8c56-890cef45ba9b',\n    source: 'zapi',\n    external_message_id: messageId,\n    phone_e164: phoneE164,\n    full_name: senderName,\n    message_type: messageType,\n    content_text: textContent,\n    media_url: mediaUrl,\n    raw_payload: body,\n    idempotency_key: `zapi:${messageId}`\n  }\n}];"
+      },
+      "id": "e3d7bf05-4697-499c-b937-16b32d86bc96",
+      "name": "Normalizar Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [48, 64]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_register_webhook_idempotency",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_secret_PppcJdobWG1_Mzenf18MXQ_sz4mGLC2" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_tenant_id\": \"{{ $json.tenant_id }}\",\n  \"p_source\": \"{{ $json.source }}\",\n  \"p_idempotency_key\": \"{{ $json.idempotency_key }}\"\n}",
+        "options": {}
+      },
+      "id": "e2292789-986c-4815-b442-09542d642a25",
+      "name": "Registrar Idempotência",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [272, 64],
+      "credentials": {
+        "httpHeaderAuth": { "id": "10BQAVJikK348Noc", "name": "Header Auth account" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "check-duplicate",
+              "leftValue": "={{ $json.already_exists }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6e976038-7396-439c-b05b-a286db0becab",
+      "name": "Já Processado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [496, 64]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"duplicate\", \"message\": \"Webhook já processado\" }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "42be561b-81cd-4371-9efa-5d856b0b41c5",
+      "name": "Responder Duplicado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [720, -32]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_create_or_update_customer_from_whatsapp",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_secret_PppcJdobWG1_Mzenf18MXQ_sz4mGLC2" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_tenant_id\": \"{{ $('Normalizar Payload').item.json.tenant_id }}\",\n  \"p_phone_e164\": \"{{ $('Normalizar Payload').item.json.phone_e164 }}\",\n  \"p_full_name\": \"{{ $('Normalizar Payload').item.json.full_name }}\"\n}",
+        "options": {}
+      },
+      "id": "a57bbd40-7aa4-46ef-905c-317851855622",
+      "name": "Upsert Cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 160],
+      "credentials": {
+        "httpHeaderAuth": { "id": "10BQAVJikK348Noc", "name": "Header Auth account" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_open_conversation",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_secret_PppcJdobWG1_Mzenf18MXQ_sz4mGLC2" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_tenant_id\": \"5518085b-42e9-4608-8c56-890cef45ba9b\",\n  \"p_channel_id\": \"58c4062a-9fe9-4ae2-abff-5a8b5236a79e\",\n  \"p_customer_id\": \"{{ $('Upsert Cliente').item.json.customer_id }}\"\n}",
+        "options": {}
+      },
+      "id": "fd5e0a0b-067e-4253-a977-aaaa3ca973cb",
+      "name": "Abrir Conversa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [944, 160],
+      "credentials": {
+        "httpHeaderAuth": { "id": "10BQAVJikK348Noc", "name": "Header Auth account" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_register_inbound_message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_secret_PppcJdobWG1_Mzenf18MXQ_sz4mGLC2" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_tenant_id\": \"{{ $('Normalizar Payload').item.json.tenant_id }}\",\n  \"p_conversation_id\": \"{{ $('Abrir Conversa').item.json.conversation_id }}\",\n  \"p_customer_id\": \"{{ $('Upsert Cliente').item.json.customer_id }}\",\n  \"p_message_type\": \"{{ $('Normalizar Payload').item.json.message_type }}\",\n  \"p_content_text\": \"{{ $('Normalizar Payload').item.json.content_text }}\",\n  \"p_media_url\": \"{{ $('Normalizar Payload').item.json.media_url }}\",\n  \"p_external_message_id\": \"{{ $('Normalizar Payload').item.json.external_message_id }}\"\n}",
+        "options": {}
+      },
+      "id": "883645d3-cf6d-46f7-9531-d9a5b9d29a7c",
+      "name": "Registrar Inbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1168, 160],
+      "credentials": {
+        "httpHeaderAuth": { "id": "10BQAVJikK348Noc", "name": "Header Auth account" }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1392, 160],
+      "id": "54a792e0-f28e-4cfc-8db6-02467f8048ab",
+      "name": "Wait",
+      "webhookId": "11d34251-bdf4-4655-b651-7b606e247e00"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_take_conversation_batch",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_secret_PppcJdobWG1_Mzenf18MXQ_sz4mGLC2" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_conversation_id",
+              "value": "={{ $('Abrir Conversa').item.json.conversation_id }}"
+            },
+            {
+              "name": "p_message_id",
+              "value": "={{ $('Registrar Inbound').item.json.message_id }}"
+            },
+            {
+              "name": "p_batch_window_seconds",
+              "value": "=10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1616, 160],
+      "id": "dc63d948-8598-47df-9ab5-9ff21274f755",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2f1f6aa9-8312-449b-be46-7c280a8df4fb",
+              "leftValue": "={{ $json.should_process }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1840, 160],
+      "id": "f46bb281-98cb-46e6-a089-0c7ab7a918fd",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n.atividadeweb.com.br/webhook/wa-ai-agent",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"tenant_id\": \"{{ $('Normalizar Payload').item.json.tenant_id }}\",\n  \"customer_id\": \"{{ $('Upsert Cliente').item.json.customer_id }}\",\n  \"conversation_id\": \"{{ $('Abrir Conversa').item.json.conversation_id }}\",\n  \"channel_id\": \"58c4062a-9fe9-4ae2-abff-5a8b5236a79e\",\n  \"message_id\": \"{{ $('Registrar Inbound').item.json.message_id }}\",\n  \"content_text\": \"{{ $('HTTP Request').item.json.combined_text || $('Normalizar Payload').item.json.content_text }}\",\n  \"content_type\": \"{{ $('Normalizar Payload').item.json.message_type }}\",\n  \"media_url\": \"{{ $('Normalizar Payload').item.json.media_url }}\",\n  \"customer_name\": \"{{ $('Normalizar Payload').item.json.full_name }}\",\n  \"customer_phone\": \"{{ $('Normalizar Payload').item.json.phone_e164 }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2064, 64],
+      "id": "7705b42e-b33a-44fb-bd6e-36478d68d786",
+      "name": "Disparar Decisão"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jxqnfzujsgtzzjabvplm.supabase.co/rest/v1/rpc/rpc_finalize_webhook_idempotency",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "sb_secret_PppcJdobWG1_Mzenf18MXQ_sz4mGLC2" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_idempotency_id\": \"{{ $('Registrar Idempotência').item.json.idempotency_id }}\",\n  \"p_status\": \"completed\"\n}",
+        "options": {}
+      },
+      "id": "5e6a384f-0d8b-4ebf-a718-49ead9bffd38",
+      "name": "Finalizar Idempotência",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2288, 64],
+      "credentials": {
+        "httpHeaderAuth": { "id": "10BQAVJikK348Noc", "name": "Header Auth account" }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"ok\", \"message\": \"Inbound processado com sucesso\" }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "f551e95b-4350-4337-a149-f9af1d0c5cb5",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2512, 64]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [2064, 256],
+      "id": "bdbb48f7-b104-4527-8789-20c73d914ee5",
+      "name": "Respond OK"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Z-API": {
+      "main": [[{ "node": "Normalizar Payload", "type": "main", "index": 0 }]]
+    },
+    "Normalizar Payload": {
+      "main": [[{ "node": "Registrar Idempotência", "type": "main", "index": 0 }]]
+    },
+    "Registrar Idempotência": {
+      "main": [[{ "node": "Já Processado?", "type": "main", "index": 0 }]]
+    },
+    "Já Processado?": {
+      "main": [
+        [{ "node": "Responder Duplicado", "type": "main", "index": 0 }],
+        [{ "node": "Upsert Cliente", "type": "main", "index": 0 }]
+      ]
+    },
+    "Upsert Cliente": {
+      "main": [[{ "node": "Abrir Conversa", "type": "main", "index": 0 }]]
+    },
+    "Abrir Conversa": {
+      "main": [[{ "node": "Registrar Inbound", "type": "main", "index": 0 }]]
+    },
+    "Registrar Inbound": {
+      "main": [[{ "node": "Wait", "type": "main", "index": 0 }]]
+    },
+    "Wait": {
+      "main": [[{ "node": "HTTP Request", "type": "main", "index": 0 }]]
+    },
+    "HTTP Request": {
+      "main": [[{ "node": "If", "type": "main", "index": 0 }]]
+    },
+    "If": {
+      "main": [
+        [{ "node": "Disparar Decisão", "type": "main", "index": 0 }],
+        [{ "node": "Respond OK", "type": "main", "index": 0 }]
+      ]
+    },
+    "Disparar Decisão": {
+      "main": [[{ "node": "Finalizar Idempotência", "type": "main", "index": 0 }]]
+    },
+    "Finalizar Idempotência": {
+      "main": [[{ "node": "Responder OK", "type": "main", "index": 0 }]]
+    },
+    "Responder OK": { "main": [[]] }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "271b0620-bdd7-439a-bbf9-61219536045a",
+  "meta": {
+    "instanceId": "43908f0b706b5508d6f99bac4091df197f8ba449e09ee3d672885a06006b0d6f"
+  },
+  "id": "NNEoKlzImbPL3hRd",
+  "tags": []
+}
