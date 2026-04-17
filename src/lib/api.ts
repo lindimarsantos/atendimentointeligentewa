@@ -46,6 +46,7 @@ import type {
   BusinessContact,
   ApiKeys,
   UserTenantMembership,
+  OperationalStats,
 } from '@/types'
 
 async function rpc<T>(name: string, params: Record<string, unknown> = {}): Promise<T> {
@@ -65,6 +66,10 @@ async function rpcList<T>(name: string, params: Record<string, unknown> = {}): P
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   return rpc('rpc_dashboard_summary', { p_tenant_id: getTenantId() })
+}
+
+export async function getOperationalStats(): Promise<OperationalStats> {
+  return rpc('rpc_get_operational_stats', { p_tenant_id: getTenantId() })
 }
 
 export async function getConversationsTrend(days = 30): Promise<DailyMetric[]> {

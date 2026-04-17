@@ -146,6 +146,15 @@ export interface DashboardSummary {
   generated_at:  string
 }
 
+export interface OperationalStats {
+  messages_today:      number
+  new_customers_today: number
+  followups_sent:      number
+  reminder_rules:      number
+  open_conversations:  number
+  jobs_completed:      number
+}
+
 export interface DailyMetric {
   date: string           // YYYY-MM-DD
   conversations: number

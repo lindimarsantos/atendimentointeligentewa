@@ -3,12 +3,12 @@
 import { useEffect, useState, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { Card } from '@/components/ui/Card'
-import { getDashboardSummary, getConversationsTrend, getAppointmentsTrend } from '@/lib/api'
-import type { DashboardSummary, DailyMetric, DailyAppointmentMetric } from '@/types'
+import { getDashboardSummary, getConversationsTrend, getAppointmentsTrend, getOperationalStats } from '@/lib/api'
+import type { DashboardSummary, DailyMetric, DailyAppointmentMetric, OperationalStats } from '@/types'
 import { fmtSeconds } from '@/lib/utils'
 import {
   MessageSquare, Bot, UserCheck, Clock, CheckCircle2, CalendarCheck,
-  TrendingUp, TrendingDown, Minus,
+  TrendingUp, TrendingDown, Minus, Users, Bell, BookOpen, Inbox, Briefcase,
 } from 'lucide-react'
 
 // recharts (no SSR)
@@ -75,6 +75,7 @@ const PERIODS = [
 export default function AnalyticsPage() {
   const [period, setPeriod]         = useState(30)
   const [summary, setSummary]       = useState<DashboardSummary | null>(null)
+  const [opStats, setOpStats]       = useState<OperationalStats | null>(null)
   const [convTrend, setConvTrend]   = useState<DailyMetric[]>([])
   const [apptTrend, setApptTrend]   = useState<DailyAppointmentMetric[]>([])
   const [loading, setLoading]       = useState(true)
@@ -83,10 +84,12 @@ export default function AnalyticsPage() {
     setLoading(true)
     Promise.allSettled([
       getDashboardSummary(),
+      getOperationalStats(),
       getConversationsTrend(period),
       getAppointmentsTrend(period),
-    ]).then(([s, c, a]) => {
+    ]).then(([s, o, c, a]) => {
       if (s.status === 'fulfilled') setSummary(s.value)
+      if (o.status === 'fulfilled') setOpStats(o.value)
       if (c.status === 'fulfilled') setConvTrend(c.value)
       if (a.status === 'fulfilled') setApptTrend(a.value)
     }).finally(() => setLoading(false))
@@ -198,6 +201,53 @@ export default function AnalyticsPage() {
                 sub={`${summary?.customers.new_week ?? 0} novos esta semana`}
                 icon={TrendingUp}
                 iconBg="bg-teal-500"
+              />
+            </div>
+          </div>
+
+          {/* Operational Stats */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">Estatísticas operacionais</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+              <KpiCard
+                label="Mensagens hoje"
+                value={opStats?.messages_today ?? '—'}
+                icon={MessageSquare}
+                iconBg="bg-brand-500"
+              />
+              <KpiCard
+                label="Novos clientes"
+                value={opStats?.new_customers_today ?? '—'}
+                sub="hoje"
+                icon={Users}
+                iconBg="bg-teal-500"
+              />
+              <KpiCard
+                label="Lembretes enviados"
+                value={opStats?.followups_sent ?? '—'}
+                sub="total acumulado"
+                icon={Bell}
+                iconBg="bg-amber-500"
+              />
+              <KpiCard
+                label="Regras de lembrete"
+                value={opStats?.reminder_rules ?? '—'}
+                sub="configuradas"
+                icon={BookOpen}
+                iconBg="bg-indigo-500"
+              />
+              <KpiCard
+                label="Conversas abertas"
+                value={opStats?.open_conversations ?? '—'}
+                sub="em andamento"
+                icon={Inbox}
+                iconBg="bg-blue-500"
+              />
+              <KpiCard
+                label="Jobs concluídos"
+                value={opStats?.jobs_completed ?? '—'}
+                icon={Briefcase}
+                iconBg="bg-green-500"
               />
             </div>
           </div>
