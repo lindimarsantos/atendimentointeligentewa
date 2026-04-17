@@ -199,7 +199,7 @@ function CampaignCard({
               <Edit3 className="h-3 w-3" /> Editar
             </Button>
           )}
-          {c.status === 'draft' && (
+          {(c.status === 'draft' || c.status === 'paused') && (
             <Button variant="ghost" size="sm" onClick={onDelete} className="text-red-500 hover:text-red-700 hover:bg-red-50">
               <Trash2 className="h-3 w-3" />
             </Button>
