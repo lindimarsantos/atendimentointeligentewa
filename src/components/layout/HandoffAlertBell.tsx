@@ -6,7 +6,6 @@ import { Bell, UserCheck, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { listHandoffQueue } from '@/lib/api'
 import type { HandoffEntry } from '@/types'
-import { toast } from '@/components/ui/Toast'
 
 const POLL_INTERVAL = 30_000 // 30 s
 
@@ -27,12 +26,6 @@ export function HandoffAlertBell() {
       if (fresh.length > 0) {
         fresh.forEach((i) => seenIds.current.add(i.id))
         setNewAlerts(fresh)
-        fresh.forEach((i) => {
-          toast(
-            `${i.customer_name ?? 'Cliente'} aguarda atendimento humano`,
-            'info',
-          )
-        })
       }
     } catch {
       // silent — don't disrupt UI if polling fails
