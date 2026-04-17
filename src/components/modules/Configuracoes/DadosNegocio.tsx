@@ -9,16 +9,111 @@ import {
   listServices, listProfessionals,
   getBusinessContact, updateBusinessContact,
   getBusinessProfile, updateBusinessProfile,
+  getBusinessHours, updateBusinessHours,
 } from '@/lib/api'
-import type { Service, Professional, BusinessContact, BusinessProfile } from '@/types'
+import type { Service, Professional, BusinessContact, BusinessProfile, BusinessHour } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { Textarea } from '@/components/ui/Input'
+import { Toggle } from '@/components/ui/Toggle'
 import {
   ExternalLink, Scissors, Users, Clock, AlertCircle,
   MapPin, Phone, Globe, Mail, Instagram, Facebook, MessageCircle,
   Linkedin, Music2, Star, Building2,
 } from 'lucide-react'
 import Link from 'next/link'
+
+// ─── Business Hours ───────────────────────────────────────────────────────────
+
+const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+const DEFAULT_HOURS: BusinessHour[] = DAY_NAMES.map((_, i) => ({
+  id: '',
+  tenant_id: '',
+  day_of_week: i,
+  open_time:   i === 0 || i === 6 ? '09:00' : '09:00',
+  close_time:  i === 0 ? '12:00' : i === 6 ? '13:00' : '18:00',
+  is_open:     i >= 1 && i <= 6,
+}))
+
+function BusinessHoursSection() {
+  const [hours, setHours]   = useState<BusinessHour[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving]   = useState(false)
+
+  useEffect(() => {
+    getBusinessHours()
+      .then((data) => setHours(data.length === 7 ? data : DEFAULT_HOURS))
+      .catch(() => setHours(DEFAULT_HOURS))
+      .finally(() => setLoading(false))
+  }, [])
+
+  function update(idx: number, patch: Partial<BusinessHour>) {
+    setHours((prev) => prev.map((h, i) => i === idx ? { ...h, ...patch } : h))
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      await updateBusinessHours(hours)
+      toast('Horários de atendimento salvos')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="h-20 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-600" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-gray-500">
+        Quando fora do horário configurado e um cliente solicitar atendimento humano, a IA avisa que não há atendentes disponíveis no momento.
+      </p>
+      <div className="space-y-2">
+        {hours.map((h, i) => (
+          <div key={h.day_of_week} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+            <Toggle
+              checked={h.is_open}
+              onChange={(v) => update(i, { is_open: v })}
+            />
+            <span className={`text-sm w-16 font-medium ${h.is_open ? 'text-gray-900' : 'text-gray-400'}`}>
+              {DAY_NAMES[h.day_of_week]}
+            </span>
+            {h.is_open ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={h.open_time}
+                  onChange={(e) => update(i, { open_time: e.target.value })}
+                  className="text-sm border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+                <span className="text-xs text-gray-400">até</span>
+                <input
+                  type="time"
+                  value={h.close_time}
+                  onChange={(e) => update(i, { close_time: e.target.value })}
+                  className="text-sm border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+            ) : (
+              <span className="text-xs text-gray-400 italic">Fechado</span>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end pt-1">
+        <Button onClick={save} loading={saving} size="sm">Salvar horários</Button>
+      </div>
+    </div>
+  )
+}
 
 // ─── Profile form ─────────────────────────────────────────────────────────────
 
@@ -409,6 +504,19 @@ export function DadosNegocio() {
         ) : (
           <ContactDisplay contact={contact} onEdit={() => setEditingContact(true)} />
         )}
+      </Card>
+
+      {/* Business Hours */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <span className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-brand-500" />
+              Horário de Atendimento
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <BusinessHoursSection />
       </Card>
 
       {/* Services */}
