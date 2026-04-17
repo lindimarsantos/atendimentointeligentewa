@@ -21,13 +21,14 @@ import {
   encerrarConversa,
   agentSendMessage,
   devolverAoBot,
+  reabrirConversa,
 } from '@/lib/api'
 import type { Conversation, Message, MessageIntent } from '@/types'
 import { fmtDateTime, statusVariants } from '@/lib/utils'
 import { toast } from '@/components/ui/Toast'
 import {
   ArrowLeft, UserCheck, StickyNote,
-  CheckCircle2, AlertCircle, Tag, XCircle, Send, Bot,
+  CheckCircle2, AlertCircle, Tag, XCircle, Send, Bot, RotateCcw,
 } from 'lucide-react'
 
 const statusLabel: Record<string, string> = {
@@ -62,6 +63,7 @@ export default function ConversaDetalhePage() {
   const [savingEncerrar, setSavingEncerrar] = useState(false)
   const [savingReply, setSavingReply] = useState(false)
   const [savingDevolver, setSavingDevolver] = useState(false)
+  const [savingReabrir, setSavingReabrir] = useState(false)
 
   // Reply box
   const [reply, setReply] = useState('')
@@ -181,6 +183,19 @@ export default function ConversaDetalhePage() {
     }
   }
 
+  const handleReabrir = async () => {
+    setSavingReabrir(true)
+    try {
+      await reabrirConversa(id)
+      setConversation((c) => c ? { ...c, status: 'bot_active' } : c)
+      toast('Conversa reaberta — bot assumiu o controle')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao reabrir', 'error')
+    } finally {
+      setSavingReabrir(false)
+    }
+  }
+
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
@@ -235,6 +250,16 @@ export default function ConversaDetalhePage() {
               loading={savingDevolver}
             >
               <Bot className="h-3.5 w-3.5" /> Devolver ao bot
+            </Button>
+          )}
+          {isResolved && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleReabrir}
+              loading={savingReabrir}
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Reabrir
             </Button>
           )}
           <Button

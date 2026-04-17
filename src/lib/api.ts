@@ -147,6 +147,13 @@ export async function devolverAoBot(conversationId: string): Promise<void> {
   })
 }
 
+export async function reabrirConversa(conversationId: string): Promise<void> {
+  await rpc('rpc_reabrir_conversa', {
+    p_tenant_id: getTenantId(),
+    p_conversation_id: conversationId,
+  })
+}
+
 // ─── Customers ───────────────────────────────────────────────────────────────
 
 export async function listCustomers(search?: string, tag?: string): Promise<Customer[]> {
