@@ -23,6 +23,7 @@ import {
   Building2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { HandoffAlertBell } from './HandoffAlertBell'
 
 const nav = [
   { href: '/',                label: 'Visão Geral',     icon: LayoutDashboard },
@@ -63,10 +64,11 @@ export function Sidebar() {
         <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center shrink-0">
           <Bot className="h-5 w-5 text-white" />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 leading-tight">Atendimento</p>
           <p className="text-xs text-gray-500">Inteligente WA</p>
         </div>
+        <HandoffAlertBell />
       </div>
 
       {/* Active tenant indicator */}
