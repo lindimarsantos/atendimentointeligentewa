@@ -47,6 +47,7 @@ import type {
   ApiKeys,
   UserTenantMembership,
   OperationalStats,
+  RecipientFilter,
 } from '@/types'
 
 async function rpc<T>(name: string, params: Record<string, unknown> = {}): Promise<T> {
@@ -274,13 +275,14 @@ export async function listCampaigns(): Promise<Campaign[]> {
 
 export async function upsertCampaign(data: Partial<Campaign>): Promise<void> {
   await rpc('rpc_upsert_campaign', {
-    p_tenant_id:    getTenantId(),
-    p_id:           data.id ?? null,
-    p_name:         data.name,
-    p_template_id:  data.template_id ?? null,
-    p_target_count: data.target_count ?? null,
-    p_scheduled_at: data.scheduled_at ?? null,
-    p_status:       data.status ?? 'draft',
+    p_tenant_id:        getTenantId(),
+    p_id:               data.id ?? null,
+    p_name:             data.name,
+    p_template_id:      data.template_id ?? null,
+    p_target_count:     data.target_count ?? null,
+    p_scheduled_at:     data.scheduled_at ?? null,
+    p_status:           data.status ?? 'draft',
+    p_recipient_filter: data.recipient_filter ?? 'all',
   })
 }
 

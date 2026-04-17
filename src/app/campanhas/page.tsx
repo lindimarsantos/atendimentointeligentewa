@@ -12,7 +12,7 @@ import {
   listCampaigns, upsertCampaign, updateCampaignStatus, deleteCampaign,
   listMessageTemplates, upsertMessageTemplate, dispatchCampaign,
 } from '@/lib/api'
-import type { Campaign, MessageTemplate } from '@/types'
+import type { Campaign, MessageTemplate, RecipientFilter } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { fmtDateTime } from '@/lib/utils'
 import {
@@ -77,6 +77,15 @@ function extractComponent(components: unknown, type: string): string {
   return typeof c?.text === 'string' ? c.text : ''
 }
 
+// ─── Recipient filter options ─────────────────────────────────────────────────
+
+const RECIPIENT_FILTERS: { value: RecipientFilter; label: string; hint: string }[] = [
+  { value: 'all',             label: 'Todos os clientes', hint: 'Qualquer cliente com telefone cadastrado' },
+  { value: 'active',          label: 'Apenas ativos',     hint: 'Clientes com status "ativo"' },
+  { value: 'lead',            label: 'Apenas leads',      hint: 'Clientes com status "lead"' },
+  { value: 'active_and_lead', label: 'Ativos + leads',    hint: 'Clientes ativos ou leads' },
+]
+
 // ─── Campaign Card ────────────────────────────────────────────────────────────
 
 function CampaignCard({
@@ -111,8 +120,14 @@ function CampaignCard({
       <h3 className="text-sm font-semibold text-gray-900 mb-1">{c.name}</h3>
 
       {tmpl && (
-        <p className="text-xs text-gray-500 mb-2 truncate">
+        <p className="text-xs text-gray-500 mb-1 truncate">
           <FileText className="h-3 w-3 inline mr-1" />{tmpl.name}
+        </p>
+      )}
+      {c.recipient_filter && c.recipient_filter !== 'all' && (
+        <p className="text-xs text-brand-600 mb-2 truncate">
+          <Users className="h-3 w-3 inline mr-1" />
+          {RECIPIENT_FILTERS.find((r) => r.value === c.recipient_filter)?.label ?? c.recipient_filter}
         </p>
       )}
 
@@ -236,7 +251,7 @@ function TemplateCard({
 
 // ─── Default forms ────────────────────────────────────────────────────────────
 
-const defaultCampaign: Partial<Campaign> = { name: '', status: 'draft', template_id: undefined, scheduled_at: undefined }
+const defaultCampaign: Partial<Campaign> = { name: '', status: 'draft', template_id: undefined, scheduled_at: undefined, recipient_filter: 'all' }
 const TEMPLATE_TYPES = [
   { value: 'zapi',     label: 'Z-API (sem aprovação)'      },
   { value: 'official', label: 'API Oficial (requer aprovação Meta)' },
@@ -464,14 +479,12 @@ export default function CampanhasPage() {
               ...approvedTemplates.map((t) => ({ value: t.id, label: t.name })),
             ]}
           />
-          <Input
-            label="Número de destinatários"
-            type="number"
-            min={0}
-            value={cmpForm.target_count ?? ''}
-            onChange={(e) => setCmpForm((p) => ({ ...p, target_count: e.target.value ? Number(e.target.value) : undefined }))}
-            placeholder="Ex: 500"
-            hint="Deixe vazio para definir depois"
+          <Select
+            label="Destinatários"
+            value={cmpForm.recipient_filter ?? 'all'}
+            onChange={(e) => setCmpForm((p) => ({ ...p, recipient_filter: e.target.value as RecipientFilter }))}
+            options={RECIPIENT_FILTERS.map((r) => ({ value: r.value, label: r.label }))}
+            hint={RECIPIENT_FILTERS.find((r) => r.value === (cmpForm.recipient_filter ?? 'all'))?.hint}
           />
           <Input
             label="Agendar para"

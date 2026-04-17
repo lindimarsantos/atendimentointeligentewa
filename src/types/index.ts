@@ -108,6 +108,8 @@ export interface Professional {
 
 // ─── Campaigns / Templates ───────────────────────────────────────────────────
 
+export type RecipientFilter = 'all' | 'active' | 'lead' | 'active_and_lead'
+
 export interface Campaign {
   id: string
   tenant_id: string
@@ -117,6 +119,7 @@ export interface Campaign {
   target_count?: number
   sent_count?: number
   scheduled_at?: string
+  recipient_filter?: RecipientFilter
   created_at: string
 }
 
