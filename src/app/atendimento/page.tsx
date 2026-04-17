@@ -301,7 +301,7 @@ export default function AtendimentoPage() {
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 truncate mt-0.5">
-                        {c.last_message ?? 'Sem mensagens'}
+                        {c.last_message_text ?? c.last_message ?? 'Sem mensagens'}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
