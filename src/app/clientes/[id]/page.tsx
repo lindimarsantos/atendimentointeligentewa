@@ -1,17 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
-import { getCustomer, getCustomerMemories, listConversations, listAppointments } from '@/lib/api'
+import { Button } from '@/components/ui/Button'
+import {
+  getCustomer, getCustomerMemories, listConversations, listAppointments,
+  updateCustomerTags, listCustomerTags, autoTagCustomers,
+} from '@/lib/api'
 import type { Customer, CustomerMemory, Conversation, Appointment } from '@/types'
 import { fmtDateTime, fmtDate, memoryTypeVariants, statusVariants, timeAgo } from '@/lib/utils'
 import {
   ArrowLeft, User, Phone, Mail, Brain, AlertCircle,
-  MessageSquare, CalendarCheck, Tag,
+  MessageSquare, CalendarCheck, Tag, X, Plus, Sparkles,
 } from 'lucide-react'
+import { toast } from '@/components/ui/Toast'
 
 const memoryTypeLabel: Record<string, string> = {
   profile:             'Perfil',
@@ -51,13 +55,177 @@ function tagColor(tag: string) {
   return TAG_COLORS[h % TAG_COLORS.length]
 }
 
+// ─── Tag Editor ───────────────────────────────────────────────────────────────
+
+function TagEditor({
+  customerId,
+  initialTags,
+  onSaved,
+}: {
+  customerId: string
+  initialTags: string[]
+  onSaved: (tags: string[]) => void
+}) {
+  const [tags, setTags]             = useState<string[]>(initialTags)
+  const [input, setInput]           = useState('')
+  const [suggestions, setSugg]      = useState<string[]>([])
+  const [allTags, setAllTags]       = useState<string[]>([])
+  const [saving, setSaving]         = useState(false)
+  const [autoTagging, setAutoTag]   = useState(false)
+  const [dirty, setDirty]           = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    listCustomerTags().then(setAllTags).catch(() => {})
+  }, [])
+
+  const filtered = allTags.filter(
+    (t) => t.toLowerCase().includes(input.toLowerCase()) && !tags.includes(t)
+  )
+
+  const addTag = (tag: string) => {
+    const t = tag.trim().toLowerCase().replace(/\s+/g, '-')
+    if (!t || tags.includes(t)) return
+    const next = [...tags, t]
+    setTags(next)
+    setInput('')
+    setSugg([])
+    setDirty(true)
+  }
+
+  const removeTag = (tag: string) => {
+    setTags((prev) => prev.filter((t) => t !== tag))
+    setDirty(true)
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await updateCustomerTags(customerId, tags)
+      setDirty(false)
+      onSaved(tags)
+      toast('Tags salvas')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar tags', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const runAutoTag = async () => {
+    setAutoTag(true)
+    try {
+      await autoTagCustomers()
+      const updated = await import('@/lib/api').then((m) => m.getCustomer(customerId))
+      if (updated?.tags) {
+        setTags(updated.tags)
+        onSaved(updated.tags)
+        setDirty(false)
+      }
+      toast('Tags automáticas aplicadas')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao aplicar auto-tags', 'error')
+    } finally {
+      setAutoTag(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Current tags */}
+      <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+        {tags.length === 0 && (
+          <span className="text-xs text-gray-400 italic">Nenhuma tag</span>
+        )}
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${tagColor(tag)}`}
+          >
+            {tag}
+            <button
+              onClick={() => removeTag(tag)}
+              className="opacity-60 hover:opacity-100 transition-opacity"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          </span>
+        ))}
+      </div>
+
+      {/* Input */}
+      <div className="relative">
+        <div className="flex gap-1.5">
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value)
+              setSugg(filtered.slice(0, 6))
+            }}
+            onFocus={() => setSugg(filtered.slice(0, 6))}
+            onBlur={() => setTimeout(() => setSugg([]), 150)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); addTag(input) }
+              if (e.key === 'Escape') setSugg([])
+            }}
+            placeholder="Nova tag..."
+            className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <button
+            onClick={() => addTag(input)}
+            disabled={!input.trim()}
+            className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-40 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Suggestions */}
+        {suggestions.length > 0 && (
+          <div className="absolute left-0 right-8 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                onMouseDown={() => addTag(s)}
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors"
+              >
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${tagColor(s)}`}>
+                  {s}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={save} loading={saving} disabled={!dirty}>
+          Salvar tags
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={runAutoTag}
+          loading={autoTagging}
+        >
+          <Sparkles className="h-3 w-3" /> Auto-tag
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function ClienteDetalhePage() {
   const { id } = useParams<{ id: string }>()
-  const [customer, setCustomer]   = useState<Customer | null>(null)
-  const [memories, setMemories]   = useState<CustomerMemory[]>([])
-  const [convs, setConvs]         = useState<Conversation[]>([])
-  const [apts, setApts]           = useState<Appointment[]>([])
-  const [loading, setLoading]     = useState(true)
+  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [memories, setMemories] = useState<CustomerMemory[]>([])
+  const [convs, setConvs]       = useState<Conversation[]>([])
+  const [apts, setApts]         = useState<Appointment[]>([])
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
     Promise.allSettled([
@@ -119,21 +287,20 @@ export default function ClienteDetalhePage() {
                 <span className="text-gray-700">{customer.email}</span>
               </div>
             )}
-            {customer.tags && customer.tags.length > 0 && (
-              <div className="flex items-start gap-2">
-                <Tag className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
-                <div className="flex flex-wrap gap-1">
-                  {customer.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${tagColor(tag)}`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+
+            {/* Tag editor */}
+            <div className="pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Tag className="h-3.5 w-3.5 text-gray-400" />
+                <span className="text-xs font-medium text-gray-600">Tags</span>
               </div>
-            )}
+              <TagEditor
+                customerId={id}
+                initialTags={customer.tags ?? []}
+                onSaved={(tags) => setCustomer((c) => c ? { ...c, tags } : c)}
+              />
+            </div>
+
             <div className="pt-2 border-t border-gray-100">
               <p className="text-xs text-gray-400">Cliente desde {fmtDateTime(customer.created_at)}</p>
             </div>

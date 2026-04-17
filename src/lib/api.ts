@@ -12,6 +12,7 @@ import type {
   Conversation,
   Message,
   Customer,
+  ManualRecipient,
   Appointment,
   Service,
   Professional,
@@ -148,10 +149,11 @@ export async function devolverAoBot(conversationId: string): Promise<void> {
 
 // ─── Customers ───────────────────────────────────────────────────────────────
 
-export async function listCustomers(search?: string): Promise<Customer[]> {
+export async function listCustomers(search?: string, tag?: string): Promise<Customer[]> {
   return rpcList('rpc_list_customers', {
     p_tenant_id: getTenantId(),
     p_search: search ?? null,
+    p_tag: tag ?? null,
   })
 }
 
@@ -160,6 +162,22 @@ export async function getCustomer(customerId: string): Promise<Customer | null> 
     p_tenant_id: getTenantId(),
     p_customer_id: customerId,
   })
+}
+
+export async function updateCustomerTags(customerId: string, tags: string[]): Promise<void> {
+  await rpc('rpc_update_customer_tags', {
+    p_tenant_id: getTenantId(),
+    p_customer_id: customerId,
+    p_tags: tags,
+  })
+}
+
+export async function listCustomerTags(): Promise<string[]> {
+  return rpcList('rpc_list_customer_tags', { p_tenant_id: getTenantId() })
+}
+
+export async function autoTagCustomers(): Promise<{ updated: number }> {
+  return rpc('rpc_auto_tag_customers', { p_tenant_id: getTenantId() })
 }
 
 // ─── Appointments ────────────────────────────────────────────────────────────
@@ -293,14 +311,15 @@ export async function listCampaigns(): Promise<Campaign[]> {
 
 export async function upsertCampaign(data: Partial<Campaign>): Promise<void> {
   await rpc('rpc_upsert_campaign', {
-    p_tenant_id:        getTenantId(),
-    p_id:               data.id ?? null,
-    p_name:             data.name,
-    p_template_id:      data.template_id ?? null,
-    p_target_count:     data.target_count ?? null,
-    p_scheduled_at:     data.scheduled_at ?? null,
-    p_status:           data.status ?? 'draft',
-    p_recipient_filter: data.recipient_filter ?? 'all',
+    p_tenant_id:              getTenantId(),
+    p_id:                     data.id ?? null,
+    p_name:                   data.name,
+    p_template_id:            data.template_id ?? null,
+    p_target_count:           data.target_count ?? null,
+    p_scheduled_at:           data.scheduled_at ?? null,
+    p_status:                 data.status ?? 'draft',
+    p_recipient_filter:       data.recipient_filter ?? 'all',
+    p_manual_recipients_json: data.manual_recipients_json ?? [],
   })
 }
 

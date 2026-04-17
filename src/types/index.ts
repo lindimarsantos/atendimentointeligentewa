@@ -108,7 +108,12 @@ export interface Professional {
 
 // ─── Campaigns / Templates ───────────────────────────────────────────────────
 
-export type RecipientFilter = 'all' | 'active' | 'lead' | 'active_and_lead'
+export type RecipientFilter = 'all' | 'active' | 'lead' | 'active_and_lead' | `tag:${string}` | 'manual'
+
+export interface ManualRecipient {
+  phone: string
+  name?: string
+}
 
 export interface Campaign {
   id: string
@@ -120,6 +125,7 @@ export interface Campaign {
   sent_count?: number
   scheduled_at?: string
   recipient_filter?: RecipientFilter
+  manual_recipients_json?: ManualRecipient[]
   created_at: string
 }
 
