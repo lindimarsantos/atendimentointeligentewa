@@ -99,13 +99,14 @@ export async function getConversationMessages(conversationId: string): Promise<M
   })
 }
 
-// Agent identity — populated by AuthContext; falls back to anonymous placeholder
+const PLACEHOLDER_UUID = '00000000-0000-0000-0000-000000000001'
 
 export async function assumirConversa(conversationId: string, agentId?: string): Promise<void> {
+  const userId = agentId ?? getCurrentAgentId()
   await rpc('rpc_assumir_conversa', {
     p_tenant_id: getTenantId(),
     p_conversation_id: conversationId,
-    p_user_id: agentId ?? getCurrentAgentId(),
+    p_user_id: userId === PLACEHOLDER_UUID ? null : userId,
     p_user_name: getCurrentAgentName(),
   })
 }
