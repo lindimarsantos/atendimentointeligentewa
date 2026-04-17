@@ -45,6 +45,8 @@ export interface Customer {
   name: string
   phone: string
   email?: string
+  status?: string
+  notes?: string
   tags?: string[]
   created_at: string
   updated_at: string
