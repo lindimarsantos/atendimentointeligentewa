@@ -95,6 +95,9 @@ GRANT EXECUTE ON FUNCTION public.rpc_n8n_solicitar_humano(uuid, uuid, text, text
 -- Used by the "Aguarda Humano" tab in the frontend.
 -- ============================================================
 
+-- Drop first to allow changing the return type
+DROP FUNCTION IF EXISTS public.rpc_list_handoff_queue(uuid, text);
+
 CREATE OR REPLACE FUNCTION public.rpc_list_handoff_queue(
   p_tenant_id uuid,
   p_status    text DEFAULT 'pending'
