@@ -477,7 +477,7 @@ export default function CampanhasPage() {
             label="Agendar para"
             type="datetime-local"
             value={cmpForm.scheduled_at ? cmpForm.scheduled_at.slice(0, 16) : ''}
-            onChange={(e) => setCmpForm((p) => ({ ...p, scheduled_at: e.target.value ? e.target.value + ':00' : undefined }))}
+            onChange={(e) => { setCmpForm((p) => ({ ...p, scheduled_at: e.target.value ? e.target.value + ':00' : undefined })); e.target.blur() }}
             hint="Deixe vazio para iniciar manualmente"
           />
           <div className="flex justify-end gap-2 pt-2">
