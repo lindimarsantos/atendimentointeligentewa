@@ -64,8 +64,8 @@ BEGIN
   -- 3. Notify customer (optional bot message)
   IF p_notify_customer THEN
     INSERT INTO messaging.messages (
-      conversation_id, direction, content_type, content_text,
-      sender_type, sent_at
+      conversation_id, direction, message_type, content_text,
+      sender_type, created_at
     )
     VALUES (
       p_conversation_id,
@@ -142,7 +142,7 @@ AS $$
       SELECT m.content_text
       FROM   messaging.messages m
       WHERE  m.conversation_id = c.id
-      ORDER  BY m.sent_at DESC
+      ORDER  BY m.created_at DESC
       LIMIT  1
     )                        AS last_message,
     c.updated_at             AS conversation_updated_at

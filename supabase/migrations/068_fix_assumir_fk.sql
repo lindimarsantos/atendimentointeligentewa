@@ -7,11 +7,14 @@
 -- antes de atribuir; se não existir, assigned_user_id fica NULL.
 -- ============================================================
 
+-- Drop first so we can change parameter defaults safely
+DROP FUNCTION IF EXISTS public.rpc_assumir_conversa(uuid, uuid, text, text);
+
 CREATE OR REPLACE FUNCTION public.rpc_assumir_conversa(
   p_tenant_id       uuid,
   p_conversation_id uuid,
-  p_user_id         text,
-  p_user_name       text DEFAULT 'Agente'
+  p_user_id         text    DEFAULT NULL,
+  p_user_name       text    DEFAULT 'Agente'
 )
 RETURNS void
 LANGUAGE plpgsql
