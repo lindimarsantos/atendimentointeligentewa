@@ -111,6 +111,47 @@
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/rpc_n8n_auto_close_inactive",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_hours_after",
+              "value": "48"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "auto-close-inactive",
+      "name": "Encerrar Inativas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        960,
+        440
+      ]
+    },
+    {
+      "parameters": {
         "batchSize": 1,
         "options": {}
       },
@@ -259,7 +300,24 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Encerrar Inativas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sem Conversas": {
+      "main": [
+        [
+          {
+            "node": "Encerrar Inativas",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Montar Mensagem": {
