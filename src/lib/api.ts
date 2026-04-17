@@ -187,6 +187,24 @@ export async function autoTagCustomers(): Promise<{ updated: number }> {
   return rpc('rpc_auto_tag_customers', { p_tenant_id: getTenantId() })
 }
 
+export async function updateCustomer(customerId: string, data: {
+  full_name?: string
+  phone_e164?: string
+  email?: string
+  status?: string
+  notes?: string
+}): Promise<void> {
+  await rpc('rpc_update_customer', {
+    p_tenant_id:   getTenantId(),
+    p_customer_id: customerId,
+    p_full_name:   data.full_name   ?? null,
+    p_phone_e164:  data.phone_e164  ?? null,
+    p_email:       data.email       ?? null,
+    p_status:      data.status      ?? null,
+    p_notes:       data.notes       ?? null,
+  })
+}
+
 // ─── Appointments ────────────────────────────────────────────────────────────
 
 export async function listAppointments(dateFrom?: string, dateTo?: string, customerId?: string, professionalId?: string): Promise<Appointment[]> {

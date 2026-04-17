@@ -7,13 +7,13 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import {
   getCustomer, getCustomerMemories, listConversations, listAppointments,
-  updateCustomerTags, listCustomerTags, autoTagCustomers,
+  updateCustomerTags, listCustomerTags, autoTagCustomers, updateCustomer,
 } from '@/lib/api'
 import type { Customer, CustomerMemory, Conversation, Appointment } from '@/types'
 import { fmtDateTime, fmtDate, memoryTypeVariants, statusVariants, timeAgo } from '@/lib/utils'
 import {
   ArrowLeft, User, Phone, Mail, Brain, AlertCircle,
-  MessageSquare, CalendarCheck, Tag, X, Plus, Sparkles,
+  MessageSquare, CalendarCheck, Tag, X, Plus, Sparkles, Edit3, Save,
 } from 'lucide-react'
 import { toast } from '@/components/ui/Toast'
 
@@ -53,6 +53,102 @@ function tagColor(tag: string) {
   let h = 0
   for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) & 0xffff
   return TAG_COLORS[h % TAG_COLORS.length]
+}
+
+const CUSTOMER_STATUS_OPTIONS = [
+  { value: 'active',   label: 'Ativo'   },
+  { value: 'lead',     label: 'Lead'    },
+  { value: 'inactive', label: 'Inativo' },
+]
+
+// ─── Customer Edit Form ───────────────────────────────────────────────────────
+
+function CustomerEditForm({
+  customer,
+  onSaved,
+  onCancel,
+}: {
+  customer: Customer
+  onSaved: (updated: Partial<Customer>) => void
+  onCancel: () => void
+}) {
+  const [form, setForm] = useState({
+    full_name:  customer.name   ?? '',
+    phone_e164: customer.phone  ?? '',
+    email:      customer.email  ?? '',
+    status:     customer.status ?? 'lead',
+    notes:      customer.notes  ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm((p) => ({ ...p, [k]: e.target.value }))
+
+  const save = async () => {
+    if (!form.full_name.trim()) { toast('Nome é obrigatório', 'error'); return }
+    if (!form.phone_e164.trim()) { toast('Telefone é obrigatório', 'error'); return }
+    setSaving(true)
+    try {
+      await updateCustomer(customer.id, form)
+      onSaved({
+        name:   form.full_name,
+        phone:  form.phone_e164,
+        email:  form.email || undefined,
+        status: form.status,
+        notes:  form.notes || undefined,
+      })
+      toast('Dados salvos')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputCls = 'w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500'
+
+  return (
+    <div className="space-y-2.5">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Nome *</label>
+        <input className={inputCls} value={form.full_name} onChange={set('full_name')} placeholder="Nome completo" />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Telefone *</label>
+        <input className={inputCls} value={form.phone_e164} onChange={set('phone_e164')} placeholder="+5511999999999" />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">E-mail</label>
+        <input className={inputCls} type="email" value={form.email} onChange={set('email')} placeholder="email@exemplo.com" />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Status</label>
+        <select className={inputCls} value={form.status} onChange={set('status')}>
+          {CUSTOMER_STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Observações</label>
+        <textarea
+          className={inputCls + ' resize-none'}
+          rows={3}
+          value={form.notes}
+          onChange={set('notes')}
+          placeholder="Informações adicionais sobre o cliente..."
+        />
+      </div>
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" onClick={save} loading={saving}>
+          <Save className="h-3 w-3" /> Salvar
+        </Button>
+        <Button size="sm" variant="secondary" onClick={onCancel}>
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 // ─── Tag Editor ───────────────────────────────────────────────────────────────
@@ -226,6 +322,7 @@ export default function ClienteDetalhePage() {
   const [convs, setConvs]       = useState<Conversation[]>([])
   const [apts, setApts]         = useState<Appointment[]>([])
   const [loading, setLoading]   = useState(true)
+  const [editing, setEditing]   = useState(false)
 
   useEffect(() => {
     Promise.allSettled([
@@ -271,40 +368,73 @@ export default function ClienteDetalhePage() {
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Dados do cliente</CardTitle>
-          </CardHeader>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <User className="h-4 w-4 text-gray-400 shrink-0" />
-              <span className="text-gray-700">{customer.name}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Phone className="h-4 w-4 text-gray-400 shrink-0" />
-              <span className="text-gray-700">{customer.phone}</span>
-            </div>
-            {customer.email && (
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-gray-400 shrink-0" />
-                <span className="text-gray-700">{customer.email}</span>
-              </div>
+            {!editing && (
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-brand-600 transition-colors"
+              >
+                <Edit3 className="h-3.5 w-3.5" /> Editar
+              </button>
             )}
+          </CardHeader>
 
-            {/* Tag editor */}
-            <div className="pt-2 border-t border-gray-100">
-              <div className="flex items-center gap-1.5 mb-2">
-                <Tag className="h-3.5 w-3.5 text-gray-400" />
-                <span className="text-xs font-medium text-gray-600">Tags</span>
+          {editing ? (
+            <CustomerEditForm
+              customer={customer}
+              onSaved={(updated) => {
+                setCustomer((c) => c ? { ...c, ...updated } : c)
+                setEditing(false)
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-gray-400 shrink-0" />
+                <span className="text-gray-700">{customer.name}</span>
               </div>
-              <TagEditor
-                customerId={id}
-                initialTags={customer.tags ?? []}
-                onSaved={(tags) => setCustomer((c) => c ? { ...c, tags } : c)}
-              />
-            </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="h-4 w-4 text-gray-400 shrink-0" />
+                <span className="text-gray-700">{customer.phone}</span>
+              </div>
+              {customer.email && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-gray-400 shrink-0" />
+                  <span className="text-gray-700">{customer.email}</span>
+                </div>
+              )}
+              {customer.status && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-400 text-xs">Status:</span>
+                  <span className="text-gray-700 capitalize">
+                    {CUSTOMER_STATUS_OPTIONS.find((o) => o.value === customer.status)?.label ?? customer.status}
+                  </span>
+                </div>
+              )}
+              {customer.notes && (
+                <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+                  {customer.notes}
+                </div>
+              )}
 
-            <div className="pt-2 border-t border-gray-100">
-              <p className="text-xs text-gray-400">Cliente desde {fmtDateTime(customer.created_at)}</p>
+              {/* Tag editor */}
+              <div className="pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Tag className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="text-xs font-medium text-gray-600">Tags</span>
+                </div>
+                <TagEditor
+                  customerId={id}
+                  initialTags={customer.tags ?? []}
+                  onSaved={(tags) => setCustomer((c) => c ? { ...c, tags } : c)}
+                />
+              </div>
+
+              <div className="pt-2 border-t border-gray-100">
+                <p className="text-xs text-gray-400">Cliente desde {fmtDateTime(customer.created_at)}</p>
+              </div>
             </div>
-          </div>
+          )}
         </Card>
 
         {/* Memories */}
