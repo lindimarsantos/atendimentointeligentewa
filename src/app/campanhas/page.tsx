@@ -10,9 +10,9 @@ import { Select } from '@/components/ui/Select'
 import { Tabs } from '@/components/ui/Tabs'
 import {
   listCampaigns, upsertCampaign, updateCampaignStatus, deleteCampaign,
-  listMessageTemplates, upsertMessageTemplate, dispatchCampaign,
+  listMessageTemplates, upsertMessageTemplate, dispatchCampaign, listCustomerTags,
 } from '@/lib/api'
-import type { Campaign, MessageTemplate, RecipientFilter } from '@/types'
+import type { Campaign, MessageTemplate, RecipientFilter, ManualRecipient } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { fmtDateTime } from '@/lib/utils'
 import {
@@ -79,12 +79,36 @@ function extractComponent(components: unknown, type: string): string {
 
 // ─── Recipient filter options ─────────────────────────────────────────────────
 
-const RECIPIENT_FILTERS: { value: RecipientFilter; label: string; hint: string }[] = [
+type FilterMode = 'all' | 'active' | 'lead' | 'active_and_lead' | 'tag' | 'manual'
+
+const FILTER_MODE_OPTIONS: { value: FilterMode; label: string; hint: string }[] = [
   { value: 'all',             label: 'Todos os clientes', hint: 'Qualquer cliente com telefone cadastrado' },
   { value: 'active',          label: 'Apenas ativos',     hint: 'Clientes com status "ativo"' },
   { value: 'lead',            label: 'Apenas leads',      hint: 'Clientes com status "lead"' },
   { value: 'active_and_lead', label: 'Ativos + leads',    hint: 'Clientes ativos ou leads' },
+  { value: 'tag',             label: 'Por tag',           hint: 'Clientes com uma tag específica' },
+  { value: 'manual',          label: 'Lista manual',      hint: 'Cole telefones manualmente (um por linha)' },
 ]
+
+function filterModeOf(rf: RecipientFilter | undefined): FilterMode {
+  if (!rf || rf === 'all') return 'all'
+  if (rf === 'active' || rf === 'lead' || rf === 'active_and_lead' || rf === 'manual') return rf
+  if (rf.startsWith('tag:')) return 'tag'
+  return 'all'
+}
+
+function filterLabel(rf: RecipientFilter | undefined): string {
+  if (!rf || rf === 'all') return 'Todos'
+  if (rf === 'active') return 'Apenas ativos'
+  if (rf === 'lead') return 'Apenas leads'
+  if (rf === 'active_and_lead') return 'Ativos + leads'
+  if (rf === 'manual') return 'Lista manual'
+  if (rf.startsWith('tag:')) return `Tag: ${rf.slice(4)}`
+  return rf
+}
+
+// kept for backward-compat display in CampaignCard
+const RECIPIENT_FILTERS = FILTER_MODE_OPTIONS
 
 // ─── Campaign Card ────────────────────────────────────────────────────────────
 
@@ -127,7 +151,7 @@ function CampaignCard({
       {c.recipient_filter && c.recipient_filter !== 'all' && (
         <p className="text-xs text-brand-600 mb-2 truncate">
           <Users className="h-3 w-3 inline mr-1" />
-          {RECIPIENT_FILTERS.find((r) => r.value === c.recipient_filter)?.label ?? c.recipient_filter}
+          {filterLabel(c.recipient_filter)}
         </p>
       )}
 
@@ -251,7 +275,10 @@ function TemplateCard({
 
 // ─── Default forms ────────────────────────────────────────────────────────────
 
-const defaultCampaign: Partial<Campaign> = { name: '', status: 'draft', template_id: undefined, scheduled_at: undefined, recipient_filter: 'all' }
+const defaultCampaign: Partial<Campaign> = {
+  name: '', status: 'draft', template_id: undefined,
+  scheduled_at: undefined, recipient_filter: 'all', manual_recipients_json: [],
+}
 const TEMPLATE_TYPES = [
   { value: 'zapi',     label: 'Z-API (sem aprovação)'      },
   { value: 'official', label: 'API Oficial (requer aprovação Meta)' },
@@ -265,12 +292,16 @@ export default function CampanhasPage() {
   const [tab, setTab]                   = useState('campaigns')
   const [campaigns, setCampaigns]       = useState<Campaign[]>([])
   const [templates, setTemplates]       = useState<MessageTemplate[]>([])
+  const [allTags, setAllTags]           = useState<string[]>([])
   const [loading, setLoading]           = useState(true)
 
   // Campaign modal
-  const [cmpModal, setCmpModal]   = useState(false)
-  const [cmpForm, setCmpForm]     = useState<Partial<Campaign>>(defaultCampaign)
-  const [cmpSaving, setCmpSaving] = useState(false)
+  const [cmpModal, setCmpModal]     = useState(false)
+  const [cmpForm, setCmpForm]       = useState<Partial<Campaign>>(defaultCampaign)
+  const [filterMode, setFilterMode] = useState<FilterMode>('all')
+  const [tagSelection, setTagSel]   = useState('')
+  const [manualText, setManual]     = useState('')
+  const [cmpSaving, setCmpSaving]   = useState(false)
 
   // Template modal
   const [tmplModal, setTmplModal]   = useState(false)
@@ -280,10 +311,11 @@ export default function CampanhasPage() {
 
   const load = useCallback(() => {
     setLoading(true)
-    Promise.allSettled([listCampaigns(), listMessageTemplates()])
-      .then(([c, t]) => {
-        if (c.status === 'fulfilled') setCampaigns(c.value)
-        if (t.status === 'fulfilled') setTemplates(t.value)
+    Promise.allSettled([listCampaigns(), listMessageTemplates(), listCustomerTags()])
+      .then(([c, t, tags]) => {
+        if (c.status    === 'fulfilled') setCampaigns(c.value)
+        if (t.status    === 'fulfilled') setTemplates(t.value)
+        if (tags.status === 'fulfilled') setAllTags(tags.value)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -292,14 +324,56 @@ export default function CampanhasPage() {
 
   // ── Campaign CRUD ───────────────────────────────────────────────────────────
 
-  const openNewCampaign  = () => { setCmpForm(defaultCampaign); setCmpModal(true) }
-  const openEditCampaign = (c: Campaign) => { setCmpForm({ ...c }); setCmpModal(true) }
+  const openNewCampaign = () => {
+    setCmpForm(defaultCampaign)
+    setFilterMode('all')
+    setTagSel('')
+    setManual('')
+    setCmpModal(true)
+  }
+
+  const openEditCampaign = (c: Campaign) => {
+    setCmpForm({ ...c })
+    const mode = filterModeOf(c.recipient_filter)
+    setFilterMode(mode)
+    setTagSel(mode === 'tag' ? (c.recipient_filter ?? '').slice(4) : '')
+    if (mode === 'manual' && c.manual_recipients_json) {
+      setManual(
+        c.manual_recipients_json
+          .map((r) => r.name ? `${r.phone},${r.name}` : r.phone)
+          .join('\n')
+      )
+    } else {
+      setManual('')
+    }
+    setCmpModal(true)
+  }
+
+  const parseManualRecipients = (text: string): ManualRecipient[] =>
+    text.split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => {
+        const [phone, ...rest] = l.split(',')
+        return { phone: phone.trim(), name: rest.join(',').trim() || undefined }
+      })
 
   const handleSaveCampaign = async () => {
     if (!cmpForm.name?.trim()) { toast('Nome da campanha é obrigatório', 'error'); return }
+    if (filterMode === 'tag' && !tagSelection) { toast('Selecione uma tag', 'error'); return }
+    if (filterMode === 'manual' && !manualText.trim()) { toast('Adicione ao menos um telefone', 'error'); return }
+
+    const recipient_filter: RecipientFilter =
+      filterMode === 'tag' ? `tag:${tagSelection}` as RecipientFilter
+      : filterMode === 'manual' ? 'manual'
+      : filterMode as RecipientFilter
+
+    const manual_recipients_json: ManualRecipient[] =
+      filterMode === 'manual' ? parseManualRecipients(manualText) : []
+
     setCmpSaving(true)
     try {
-      await upsertCampaign(cmpForm)
+      await upsertCampaign({ ...cmpForm, recipient_filter, manual_recipients_json })
       toast(cmpForm.id ? 'Campanha atualizada' : 'Campanha criada')
       setCmpModal(false)
       load()
@@ -481,11 +555,43 @@ export default function CampanhasPage() {
           />
           <Select
             label="Destinatários"
-            value={cmpForm.recipient_filter ?? 'all'}
-            onChange={(e) => setCmpForm((p) => ({ ...p, recipient_filter: e.target.value as RecipientFilter }))}
-            options={RECIPIENT_FILTERS.map((r) => ({ value: r.value, label: r.label }))}
-            hint={RECIPIENT_FILTERS.find((r) => r.value === (cmpForm.recipient_filter ?? 'all'))?.hint}
+            value={filterMode}
+            onChange={(e) => {
+              const m = e.target.value as FilterMode
+              setFilterMode(m)
+              setTagSel('')
+              setManual('')
+            }}
+            options={FILTER_MODE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))}
+            hint={FILTER_MODE_OPTIONS.find((r) => r.value === filterMode)?.hint}
           />
+          {filterMode === 'tag' && (
+            <Select
+              label="Selecionar tag *"
+              value={tagSelection}
+              onChange={(e) => setTagSel(e.target.value)}
+              options={[
+                { value: '', label: 'Escolha uma tag...' },
+                ...allTags.map((t) => ({ value: t, label: t })),
+              ]}
+            />
+          )}
+          {filterMode === 'manual' && (
+            <div>
+              <Textarea
+                label="Lista de telefones *"
+                rows={6}
+                value={manualText}
+                onChange={(e) => setManual(e.target.value)}
+                placeholder={`Um por linha. Formatos aceitos:\n5511999999999\n5511999999999,João Silva`}
+              />
+              {manualText.trim() && (
+                <p className="text-xs text-gray-400 mt-1">
+                  {parseManualRecipients(manualText).length} destinatários
+                </p>
+              )}
+            </div>
+          )}
           <Input
             label="Agendar para"
             type="datetime-local"
