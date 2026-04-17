@@ -1178,6 +1178,38 @@
           "combinator": "and"
         }
       }
+    },
+    {
+      "id": "human-check-001",
+      "name": "É Atendimento Humano?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        860,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-human",
+              "leftValue": "={{ $json.conversation_status }}",
+              "rightValue": "open",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
     }
   ],
   "pinData": {},
@@ -1402,7 +1434,7 @@
       "main": [
         [
           {
-            "node": "É Áudio?",
+            "node": "É Atendimento Humano?",
             "type": "main",
             "index": 0
           }
@@ -1588,6 +1620,24 @@
         [
           {
             "node": "Enfileirar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Atendimento Humano?": {
+      "main": [
+        [
+          {
+            "node": "Resposta 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "É Áudio?",
             "type": "main",
             "index": 0
           }

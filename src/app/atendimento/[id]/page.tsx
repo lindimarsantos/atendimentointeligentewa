@@ -19,13 +19,15 @@ import {
   assumirConversa,
   registrarNota,
   encerrarConversa,
+  agentSendMessage,
+  devolverAoBot,
 } from '@/lib/api'
 import type { Conversation, Message, MessageIntent } from '@/types'
 import { fmtDateTime, statusVariants } from '@/lib/utils'
 import { toast } from '@/components/ui/Toast'
 import {
   ArrowLeft, UserCheck, StickyNote,
-  CheckCircle2, AlertCircle, Tag, XCircle,
+  CheckCircle2, AlertCircle, Tag, XCircle, Send, Bot,
 } from 'lucide-react'
 
 const statusLabel: Record<string, string> = {
@@ -58,6 +60,11 @@ export default function ConversaDetalhePage() {
   const [savingAssumir, setSavingAssumir] = useState(false)
   const [savingNota, setSavingNota] = useState(false)
   const [savingEncerrar, setSavingEncerrar] = useState(false)
+  const [savingReply, setSavingReply] = useState(false)
+  const [savingDevolver, setSavingDevolver] = useState(false)
+
+  // Reply box
+  const [reply, setReply] = useState('')
 
   // Modal states
   const [notaModal, setNotaModal] = useState(false)
@@ -134,6 +141,46 @@ export default function ConversaDetalhePage() {
     }
   }
 
+  const handleReply = async () => {
+    if (!reply.trim()) return
+    setSavingReply(true)
+    try {
+      const creds = await agentSendMessage(id, reply)
+      setReply('')
+      // Fire-and-forget Z-API call to actually send the WhatsApp message
+      if (creds.zapi_instance_id && creds.zapi_token && creds.customer_phone) {
+        const zapiUrl = `https://api.z-api.io/instances/${creds.zapi_instance_id}/token/${creds.zapi_token}/send-text`
+        fetch(zapiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(creds.zapi_client_token ? { 'Client-Token': creds.zapi_client_token } : {}),
+          },
+          body: JSON.stringify({ phone: creds.customer_phone, message: reply }),
+        }).catch(() => {})
+      }
+      await loadMessages()
+      toast('Mensagem enviada')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao enviar mensagem', 'error')
+    } finally {
+      setSavingReply(false)
+    }
+  }
+
+  const handleDevolver = async () => {
+    setSavingDevolver(true)
+    try {
+      await devolverAoBot(id)
+      setConversation((c) => c ? { ...c, status: 'bot_active' } : c)
+      toast('Conversa devolvida ao bot')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao devolver', 'error')
+    } finally {
+      setSavingDevolver(false)
+    }
+  }
+
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
@@ -170,7 +217,7 @@ export default function ConversaDetalhePage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isResolved && (
+          {(conversation.status === 'bot_active' || conversation.status === 'waiting_human') && (
             <Button
               variant="secondary"
               size="sm"
@@ -178,6 +225,16 @@ export default function ConversaDetalhePage() {
               loading={savingAssumir}
             >
               <UserCheck className="h-3.5 w-3.5" /> Assumir
+            </Button>
+          )}
+          {conversation.status === 'open' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleDevolver}
+              loading={savingDevolver}
+            >
+              <Bot className="h-3.5 w-3.5" /> Devolver ao bot
             </Button>
           )}
           <Button
@@ -261,6 +318,30 @@ export default function ConversaDetalhePage() {
               )}
               <div ref={messagesEndRef} />
             </div>
+            {conversation.status === 'open' && (
+              <div className="px-4 pb-4 border-t border-gray-100 pt-3">
+                <div className="flex gap-2 items-end">
+                  <textarea
+                    className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[64px] max-h-[160px]"
+                    placeholder="Escreva sua resposta..."
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleReply()
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleReply}
+                    loading={savingReply}
+                    disabled={!reply.trim()}
+                  >
+                    <Send className="h-3.5 w-3.5" /> Enviar
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Ctrl+Enter para enviar</p>
+              </div>
+            )}
           </Card>
         </div>
 

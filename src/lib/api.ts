@@ -128,6 +128,24 @@ export async function encerrarConversa(conversationId: string): Promise<void> {
   })
 }
 
+export async function agentSendMessage(
+  conversationId: string,
+  messageText: string,
+): Promise<{ customer_phone: string; zapi_instance_id: string; zapi_token: string; zapi_client_token: string }> {
+  return rpc('rpc_agent_send_message', {
+    p_tenant_id: getTenantId(),
+    p_conversation_id: conversationId,
+    p_message_text: messageText,
+  })
+}
+
+export async function devolverAoBot(conversationId: string): Promise<void> {
+  await rpc('rpc_devolver_ao_bot', {
+    p_tenant_id: getTenantId(),
+    p_conversation_id: conversationId,
+  })
+}
+
 // ─── Customers ───────────────────────────────────────────────────────────────
 
 export async function listCustomers(search?: string): Promise<Customer[]> {
