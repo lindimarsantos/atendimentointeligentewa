@@ -108,6 +108,24 @@ export interface Professional {
   updated_at?: string
 }
 
+// ─── Professional Calendars (Google Calendar) ────────────────────────────────
+
+export interface ProfessionalCalendar {
+  id: string
+  professional_id: string
+  provider: string
+  calendar_id: string
+  calendar_name?: string
+  is_primary: boolean
+  sync_direction: string
+  status: string
+  last_synced_at?: string
+  oauth_token_expires_at?: string
+  created_at: string
+  has_credentials: boolean
+  professional_name: string
+}
+
 // ─── Campaigns / Templates ───────────────────────────────────────────────────
 
 export type RecipientFilter = 'all' | 'active' | 'lead' | 'active_and_lead' | `tag:${string}` | 'manual'
