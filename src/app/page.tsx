@@ -158,16 +158,38 @@ function DonutStat({ label, value, color }: { label: string; value: number; colo
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-const PERIOD_OPTIONS = [7, 14, 30] as const
+function todayStr() { return new Date().toISOString().slice(0, 10) }
+function daysAgoStr(n: number) {
+  const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10)
+}
+function dateDiff(start: string, end: string) {
+  return Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000) + 1)
+}
 
 export default function VisaoGeralPage() {
-  const [summary, setSummary]   = useState<DashboardSummary | null>(null)
-  const [convs, setConvs]       = useState<Conversation[]>([])
-  const [apts, setApts]         = useState<Appointment[]>([])
-  const [trend, setTrend]       = useState<DailyMetric[]>([])
-  const [aptTrend, setAptTrend] = useState<DailyAppointmentMetric[]>([])
-  const [period, setPeriod]     = useState<7 | 14 | 30>(30)
-  const [loading, setLoading]   = useState(true)
+  const [summary, setSummary]       = useState<DashboardSummary | null>(null)
+  const [convs, setConvs]           = useState<Conversation[]>([])
+  const [apts, setApts]             = useState<Appointment[]>([])
+  const [trend, setTrend]           = useState<DailyMetric[]>([])
+  const [aptTrend, setAptTrend]     = useState<DailyAppointmentMetric[]>([])
+  const [period, setPeriod]         = useState<number>(30)
+  const [loading, setLoading]       = useState(true)
+  const [customMode, setCustomMode] = useState(false)
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd]     = useState('')
+
+  function activateCustom() {
+    if (!customMode) {
+      setCustomEnd(todayStr())
+      setCustomStart(daysAgoStr(59))
+      setPeriod(60)
+    }
+    setCustomMode(true)
+  }
+
+  function applyCustom(start: string, end: string) {
+    if (start && end && end >= start) setPeriod(dateDiff(start, end))
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -233,18 +255,48 @@ export default function VisaoGeralPage() {
             Atualizado agora · {s?.generated_at ? fmtDateTime(s.generated_at) : '—'}
           </p>
         </div>
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-          {PERIOD_OPTIONS.map(p => (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+            {([7, 14, 30] as const).map(p => (
+              <button
+                key={p}
+                onClick={() => { setCustomMode(false); setPeriod(p) }}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  !customMode && period === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {p}d
+              </button>
+            ))}
             <button
-              key={p}
-              onClick={() => setPeriod(p)}
+              onClick={activateCustom}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                period === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                customMode ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              {p}d
+              Personalizado
             </button>
-          ))}
+          </div>
+          {customMode && (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={customStart}
+                max={customEnd || todayStr()}
+                onChange={e => { setCustomStart(e.target.value); applyCustom(e.target.value, customEnd) }}
+                className="text-xs border border-gray-200 rounded-md px-2 py-1.5 text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+              <span className="text-xs text-gray-400">→</span>
+              <input
+                type="date"
+                value={customEnd}
+                min={customStart}
+                max={todayStr()}
+                onChange={e => { setCustomEnd(e.target.value); applyCustom(customStart, e.target.value) }}
+                className="text-xs border border-gray-200 rounded-md px-2 py-1.5 text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+          )}
         </div>
       </div>
 
