@@ -121,7 +121,7 @@ GIT_BRANCH          = claude/resume-session-2fEn8
 | `rpc_upsert_professional_calendar` | Conecta/atualiza Google Calendar com tokens OAuth |
 | `rpc_delete_professional_calendar` | Desconecta calendário |
 | `rpc_get_appointments_pending_google_sync` | Agendamentos confirmados sem external_event_id (por tenant) |
-| `rpc_get_all_appointments_pending_google_sync` | Idem cross-tenant (service_role apenas — usado pelo worker n8n) |
+| `rpc_get_all_appointments_pending_google_sync` | Idem cross-tenant (service_role apenas — usado pelo worker n8n). **086**: não exige oauth_refresh_token |
 | `rpc_update_appointment_external_id` | Grava Google event ID no agendamento após sync |
 | `rpc_log_calendar_sync` | Loga tentativa de sync (direction, status, request/response) |
 

@@ -35,7 +35,7 @@ WhatsApp (Z-API) → n8n (inbound) → Supabase (RPCs) → n8n (AI Agent / worke
 - Transfer intent interceptado em `rpc_take_conversation_batch` (079)
 - Business hours enforcement ativo (078)
 
-### Fase 3 — Agenda ✅ COMPLETA
+### Fase 3 — Agenda ✅ COMPLETA (migration 086)
 - Scheduling - Appointment Flow ✅
 - Scheduling - Reminder Worker ✅
 - Scheduling Follow-up — Sem Resposta ✅ (corrigido 082)
@@ -114,5 +114,6 @@ Todos os módulos com UI implementada:
 | WA - Decision and Buffered Reply | INFO | Inativo — substituído por WA - AI Agent. Arquivar. |
 | Google Calendar — credenciais n8n | MÉDIA | Workflow criado (U9BZl6uSy8RINGJ6). Editar nó "Parse Appointments" com CLIENT_ID e CLIENT_SECRET. Configurar credencial "Supabase Service Role". |
 | Scheduling Follow-up — Sem Resposta | ALTA | Novo workflow criado (72R1FIaOyMAhmFpZ) com parâmetros corretos. Atribuir credencial "Supabase Service Role" ao nó "Buscar Conversas Sem Resposta", desativar antigo (MriwCym6UkCLJuVD) e ativar novo. |
+| Google Calendar Sync | ALTA | Workflow reconstruído (086). Calendários conectados no banco. Criar credencial "Google Calendar OAuth2" (OAuth2 API) no n8n, autorizar conta laranjalimapublicidade@gmail.com e atribuir ao nó "Create Calendar Event". |
 | WA - Voice Reply Worker | MÉDIA | Não existe como workflow separado |
 | Observability - Event Consumer | BAIXA | Não implementado |
