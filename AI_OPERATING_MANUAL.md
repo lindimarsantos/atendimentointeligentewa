@@ -184,7 +184,8 @@ GIT_BRANCH          = claude/resume-session-2fEn8
 | Tnags6ta474JxRDJ | WA - Outbound Worker | ✅ Ativo | Cron 15s |
 | 1Q9JZupMo7EkNRYK | Scheduling - Appointment Flow | ✅ Ativo | Webhook |
 | qYW6Mb8bst1adWyc | Scheduling - Reminder Worker | ✅ Ativo | Cron |
-| MriwCym6UkCLJuVD | Scheduling Follow-up — Sem Resposta | ✅ Ativo | Cron 2h |
+| MriwCym6UkCLJuVD | Scheduling Follow-up — Sem Resposta | ⚠️ **SUBSTITUIR** | Cron 2h |
+| 72R1FIaOyMAhmFpZ | Scheduling Follow-up — Sem Resposta | ⏸️ Inativo (aguarda ativação) | Cron 2h |
 | LQUXopWaXMhMaVdo | Campaigns - Dispatcher | ✅ Ativo | Cron 10min |
 | U9BZl6uSy8RINGJ6 | Scheduling - Google Calendar Sync | ✅ Ativo | Cron 2min |
 
@@ -195,6 +196,7 @@ GIT_BRANCH          = claude/resume-session-2fEn8
 
 **Configuração pendente:**
 - `Scheduling - Google Calendar Sync` — editar nó "Parse Appointments" com CLIENT_ID/CLIENT_SECRET. Criar credencial "Supabase Service Role" (HTTP Header Auth, header: apikey).
+- `Scheduling Follow-up — Sem Resposta` (72R1FIaOyMAhmFpZ) — atribuir credencial "Supabase Service Role" ao nó "Buscar Conversas Sem Resposta"; desativar workflow antigo (MriwCym6UkCLJuVD); ativar novo.
 
 **Observação:** `WA - Decision and Buffered Reply` foi substituído pelo `WA - AI Agent` (criado em 15/Abr). Pode ser arquivado.
 

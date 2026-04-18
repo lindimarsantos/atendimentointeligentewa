@@ -113,5 +113,6 @@ Todos os módulos com UI implementada:
 |---|---|---|
 | WA - Decision and Buffered Reply | INFO | Inativo — substituído por WA - AI Agent. Arquivar. |
 | Google Calendar — credenciais n8n | MÉDIA | Workflow criado (U9BZl6uSy8RINGJ6). Editar nó "Parse Appointments" com CLIENT_ID e CLIENT_SECRET. Configurar credencial "Supabase Service Role". |
+| Scheduling Follow-up — Sem Resposta | ALTA | Novo workflow criado (72R1FIaOyMAhmFpZ) com parâmetros corretos. Atribuir credencial "Supabase Service Role" ao nó "Buscar Conversas Sem Resposta", desativar antigo (MriwCym6UkCLJuVD) e ativar novo. |
 | WA - Voice Reply Worker | MÉDIA | Não existe como workflow separado |
 | Observability - Event Consumer | BAIXA | Não implementado |
