@@ -6,13 +6,15 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import {
-  listServices, listProfessionals, getBusinessHours,
+  listServices, listProfessionals,
   getBusinessContact, updateBusinessContact,
   getBusinessProfile, updateBusinessProfile,
+  getBusinessHours, updateBusinessHours,
 } from '@/lib/api'
-import type { Service, Professional, BusinessHour, BusinessContact, BusinessProfile } from '@/types'
+import type { Service, Professional, BusinessContact, BusinessProfile, BusinessHour } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { Textarea } from '@/components/ui/Input'
+import { Toggle } from '@/components/ui/Toggle'
 import {
   ExternalLink, Scissors, Users, Clock, AlertCircle,
   MapPin, Phone, Globe, Mail, Instagram, Facebook, MessageCircle,
@@ -20,7 +22,98 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
-const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+// ─── Business Hours ───────────────────────────────────────────────────────────
+
+const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+const DEFAULT_HOURS: BusinessHour[] = DAY_NAMES.map((_, i) => ({
+  id: '',
+  tenant_id: '',
+  day_of_week: i,
+  open_time:   i === 0 || i === 6 ? '09:00' : '09:00',
+  close_time:  i === 0 ? '12:00' : i === 6 ? '13:00' : '18:00',
+  is_open:     i >= 1 && i <= 6,
+}))
+
+function BusinessHoursSection() {
+  const [hours, setHours]   = useState<BusinessHour[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving]   = useState(false)
+
+  useEffect(() => {
+    getBusinessHours()
+      .then((data) => setHours(data.length === 7 ? data : DEFAULT_HOURS))
+      .catch(() => setHours(DEFAULT_HOURS))
+      .finally(() => setLoading(false))
+  }, [])
+
+  function update(idx: number, patch: Partial<BusinessHour>) {
+    setHours((prev) => prev.map((h, i) => i === idx ? { ...h, ...patch } : h))
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      await updateBusinessHours(hours)
+      toast('Horários de atendimento salvos')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="h-20 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-600" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-gray-500">
+        Quando fora do horário configurado e um cliente solicitar atendimento humano, a IA avisa que não há atendentes disponíveis no momento.
+      </p>
+      <div className="space-y-2">
+        {hours.map((h, i) => (
+          <div key={h.day_of_week} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+            <Toggle
+              checked={h.is_open}
+              onChange={(v) => update(i, { is_open: v })}
+            />
+            <span className={`text-sm w-16 font-medium ${h.is_open ? 'text-gray-900' : 'text-gray-400'}`}>
+              {DAY_NAMES[h.day_of_week]}
+            </span>
+            {h.is_open ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={h.open_time}
+                  onChange={(e) => update(i, { open_time: e.target.value })}
+                  className="text-sm border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+                <span className="text-xs text-gray-400">até</span>
+                <input
+                  type="time"
+                  value={h.close_time}
+                  onChange={(e) => update(i, { close_time: e.target.value })}
+                  className="text-sm border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+            ) : (
+              <span className="text-xs text-gray-400 italic">Fechado</span>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end pt-1">
+        <Button onClick={save} loading={saving} size="sm">Salvar horários</Button>
+      </div>
+    </div>
+  )
+}
 
 // ─── Profile form ─────────────────────────────────────────────────────────────
 
@@ -316,11 +409,9 @@ function ContactDisplay({
 export function DadosNegocio() {
   const [services,      setServices]      = useState<Service[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
-  const [hours,         setHours]         = useState<BusinessHour[]>([])
   const [contact,       setContact]       = useState<BusinessContact>({})
   const [profile,       setProfile]       = useState<BusinessProfile>({})
   const [loading,       setLoading]       = useState(true)
-  const [hoursError,    setHoursError]    = useState<string | null>(null)
   const [editingContact, setEditingContact] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
 
@@ -328,14 +419,11 @@ export function DadosNegocio() {
     Promise.allSettled([
       listServices(),
       listProfessionals(),
-      getBusinessHours(),
       getBusinessContact(),
       getBusinessProfile(),
-    ]).then(([s, p, h, c, pr]) => {
+    ]).then(([s, p, c, pr]) => {
       if (s.status === 'fulfilled') setServices(s.value)
       if (p.status === 'fulfilled') setProfessionals(p.value)
-      if (h.status === 'fulfilled') setHours(h.value)
-      else setHoursError((h as PromiseRejectedResult).reason?.message ?? 'Erro ao carregar horários')
       if (c.status === 'fulfilled') {
         setContact(c.value)
         const hasData = Object.values(c.value).some((v) => v && String(v).trim())
@@ -348,8 +436,6 @@ export function DadosNegocio() {
       }
     }).finally(() => setLoading(false))
   }, [])
-
-  const sortedHours = [...hours].sort((a, b) => a.day_of_week - b.day_of_week)
 
   if (loading)
     return (
@@ -420,6 +506,19 @@ export function DadosNegocio() {
         )}
       </Card>
 
+      {/* Business Hours */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <span className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-brand-500" />
+              Horário de Atendimento
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <BusinessHoursSection />
+      </Card>
+
       {/* Services */}
       <Card>
         <CardHeader>
@@ -469,6 +568,12 @@ export function DadosNegocio() {
               Profissionais ({professionals.length})
             </span>
           </CardTitle>
+          <Link
+            href="/servicos"
+            className="flex items-center gap-1 text-xs text-brand-600 hover:underline"
+          >
+            Gerenciar <ExternalLink className="h-3 w-3" />
+          </Link>
         </CardHeader>
         {professionals.length === 0 ? (
           <p className="text-sm text-gray-400">Nenhum profissional cadastrado</p>
@@ -496,43 +601,6 @@ export function DadosNegocio() {
         )}
       </Card>
 
-      {/* Business hours */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <span className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-green-500" />
-              Horário de funcionamento
-            </span>
-          </CardTitle>
-        </CardHeader>
-        {hoursError ? (
-          <div className="flex items-center gap-2 text-amber-700 p-3 bg-amber-50 rounded-lg text-sm">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            Horários indisponíveis — configure via módulo Agenda.
-          </div>
-        ) : sortedHours.length === 0 ? (
-          <p className="text-sm text-gray-400">Horários não configurados</p>
-        ) : (
-          <ul className="space-y-1">
-            {sortedHours.map((h) => (
-              <li key={h.id} className="flex items-center gap-3 py-1.5">
-                <span className="w-20 text-sm text-gray-600">{DAYS[h.day_of_week]}</span>
-                {h.is_open ? (
-                  <span className="text-sm text-gray-900">
-                    {h.open_time} – {h.close_time}
-                  </span>
-                ) : (
-                  <span className="text-sm text-gray-400 italic">Fechado</span>
-                )}
-                <Badge variant={h.is_open ? 'success' : 'default'}>
-                  {h.is_open ? 'Aberto' : 'Fechado'}
-                </Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
     </div>
   )
 }

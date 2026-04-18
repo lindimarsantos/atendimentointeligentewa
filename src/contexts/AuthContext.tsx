@@ -41,6 +41,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading]         = useState(true)
 
   async function loadTenant(u: User) {
+    // Set agent identity immediately — before any async call so that
+    // action buttons (Assumir etc.) never use the placeholder UUID
+    setCurrentAgentId(u.id)
+    setCurrentAgentName(
+      (u.user_metadata?.full_name as string | undefined) ?? u.email ?? 'Agente',
+    )
+
     // Fetch all tenant memberships for this user
     const { data, error } = await supabase.rpc('rpc_list_user_tenants', {
       p_user_id: u.id,
@@ -77,11 +84,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Always propagate the auth user identity to api.ts agent helpers
-    setCurrentAgentId(u.id)
-    setCurrentAgentName(
-      (u.user_metadata?.full_name as string | undefined) ?? u.email ?? 'Agente',
-    )
   }
 
   function switchTenant(id: string) {

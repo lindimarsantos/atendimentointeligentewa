@@ -45,6 +45,8 @@ export interface Customer {
   name: string
   phone: string
   email?: string
+  status?: string
+  notes?: string
   tags?: string[]
   created_at: string
   updated_at: string
@@ -106,7 +108,32 @@ export interface Professional {
   updated_at?: string
 }
 
+// ─── Professional Calendars (Google Calendar) ────────────────────────────────
+
+export interface ProfessionalCalendar {
+  id: string
+  professional_id: string
+  provider: string
+  calendar_id: string
+  calendar_name?: string
+  is_primary: boolean
+  sync_direction: string
+  status: string
+  last_synced_at?: string
+  oauth_token_expires_at?: string
+  created_at: string
+  has_credentials: boolean
+  professional_name: string
+}
+
 // ─── Campaigns / Templates ───────────────────────────────────────────────────
+
+export type RecipientFilter = 'all' | 'active' | 'lead' | 'active_and_lead' | `tag:${string}` | 'manual'
+
+export interface ManualRecipient {
+  phone: string
+  name?: string
+}
 
 export interface Campaign {
   id: string
@@ -117,6 +144,8 @@ export interface Campaign {
   target_count?: number
   sent_count?: number
   scheduled_at?: string
+  recipient_filter?: RecipientFilter
+  manual_recipients_json?: ManualRecipient[]
   created_at: string
 }
 
@@ -144,6 +173,15 @@ export interface DashboardSummary {
   reminders:     { rules_active: number; dispatches_sent: number; dispatches_failed: number }
   performance:   { avg_first_response_seconds: number; avg_resolution_seconds: number; bot_resolution_rate: number; handoff_rate: number }
   generated_at:  string
+}
+
+export interface OperationalStats {
+  messages_today:      number
+  new_customers_today: number
+  followups_sent:      number
+  reminder_rules:      number
+  open_conversations:  number
+  jobs_completed:      number
 }
 
 export interface DailyMetric {
@@ -278,6 +316,7 @@ export interface AiAgentProfile {
   use_recommendations: boolean
   use_scheduling: boolean
   allow_voice_response: boolean
+  restrict_to_configured_services: boolean
   config_jsonb?: Record<string, unknown>
   updated_at: string
 }
@@ -353,6 +392,8 @@ export interface ChannelSettings {
   welcome_message?: string
   out_of_hours_message?: string
   handoff_message?: string
+  scheduling_followup_message?: string
+  scheduling_followup_message_2?: string
   buffer_active: boolean
   typing_simulation: boolean
   updated_at: string

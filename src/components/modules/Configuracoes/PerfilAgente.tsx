@@ -23,6 +23,7 @@ const DEFAULT_PROFILE: AiAgentProfile = {
   use_recommendations: true,
   use_scheduling: true,
   allow_voice_response: false,
+  restrict_to_configured_services: false,
   updated_at: '',
 }
 
@@ -150,6 +151,12 @@ export function PerfilAgente() {
             onChange={(v) => set('allow_voice_response', v)}
             label="Responder por áudio"
             description="Permite que o agente envie mensagens de voz via ElevenLabs"
+          />
+          <Toggle
+            checked={data.restrict_to_configured_services}
+            onChange={(v) => set('restrict_to_configured_services', v)}
+            label="Restringir ao catálogo de serviços"
+            description="Ativado: a IA fala apenas dos serviços cadastrados (pode reformular, mas não inventa novos). Desativado: a IA pode complementar com conhecimento externo."
           />
         </div>
       </Card>

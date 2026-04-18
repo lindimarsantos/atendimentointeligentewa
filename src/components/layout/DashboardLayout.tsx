@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Bot } from 'lucide-react'
 import { Sidebar } from './Sidebar'
+import { HandoffBanner } from './HandoffBanner'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -46,6 +47,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
+      <HandoffBanner />
       <main className="pl-60 min-h-screen">
         <div className="max-w-7xl mx-auto px-6 py-8">{children}</div>
       </main>

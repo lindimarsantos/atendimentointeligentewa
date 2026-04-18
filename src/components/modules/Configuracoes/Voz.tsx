@@ -20,9 +20,10 @@ export function Voz() {
   const [modal, setModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [form, setForm] = useState<Partial<VoiceProfile>>({
+  const [form, setForm] = useState<Partial<VoiceProfile> & { api_key?: string; send_text_with_audio?: boolean }>({
     name: '', provider: 'elevenlabs', voice_external_id: '',
-    language_code: 'pt-BR', gender: 'female', is_default: false,
+    language_code: 'pt-BR', gender: 'female', is_default: false, api_key: '',
+    send_text_with_audio: true,
   })
 
   const load = () => {
@@ -38,21 +39,42 @@ export function Voz() {
   const openNew = () => {
     setForm({
       name: '', provider: 'elevenlabs', voice_external_id: '',
-      language_code: 'pt-BR', gender: 'female', is_default: false,
+      language_code: 'pt-BR', gender: 'female', is_default: false, api_key: '',
+      send_text_with_audio: true,
     })
     setModal(true)
   }
 
-  const openEdit = (p: VoiceProfile) => { setForm({ ...p }); setModal(true) }
+  const openEdit = (p: VoiceProfile) => {
+    setForm({
+      ...p,
+      api_key: (p.settings_jsonb?.api_key as string) ?? '',
+      send_text_with_audio: (p.settings_jsonb?.send_text_with_audio as boolean) ?? true,
+    })
+    setModal(true)
+  }
 
   const handleSave = async () => {
     if (!form.name || !form.voice_external_id) {
       toast('Preencha nome e ID da voz', 'error')
       return
     }
+    if (!form.api_key && !form.settings_jsonb?.api_key) {
+      toast('Preencha a API Key do ElevenLabs', 'error')
+      return
+    }
+    // Monta settings_jsonb com api_key + defaults do modelo + opção de texto
+    const settings_jsonb = {
+      ...(form.settings_jsonb ?? {}),
+      model_id: 'eleven_multilingual_v2',
+      stability: 0.5,
+      similarity_boost: 0.75,
+      send_text_with_audio: form.send_text_with_audio ?? true,
+      ...(form.api_key ? { api_key: form.api_key } : {}),
+    }
     setSaving(true)
     try {
-      await upsertVoiceProfile(form)
+      await upsertVoiceProfile({ ...form, settings_jsonb })
       toast('Perfil de voz salvo')
       setModal(false)
       load()
@@ -151,6 +173,14 @@ export function Voz() {
             placeholder="21m00Tcm4TlvDq8ikWAM"
             hint="Encontre o ID no painel do ElevenLabs"
           />
+          <Input
+            label="API Key ElevenLabs"
+            type="password"
+            value={form.api_key ?? ''}
+            onChange={(e) => setForm((p) => ({ ...p, api_key: e.target.value }))}
+            placeholder={form.settings_jsonb?.api_key ? '••••••••• (salva — cole para alterar)' : 'sk_...'}
+            hint="Crie em elevenlabs.io → Perfil → API Keys"
+          />
           <div className="grid grid-cols-2 gap-3">
             <Select
               label="Idioma"
@@ -174,6 +204,12 @@ export function Voz() {
               ]}
             />
           </div>
+          <Toggle
+            checked={form.send_text_with_audio ?? true}
+            onChange={(v) => setForm((p) => ({ ...p, send_text_with_audio: v }))}
+            label="Enviar texto junto com o áudio"
+            description="Desativado: ao responder por voz, envia apenas o áudio (sem a mensagem de texto)"
+          />
           <Toggle
             checked={form.is_default ?? false}
             onChange={(v) => setForm((p) => ({ ...p, is_default: v }))}

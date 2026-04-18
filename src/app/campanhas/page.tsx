@@ -10,9 +10,9 @@ import { Select } from '@/components/ui/Select'
 import { Tabs } from '@/components/ui/Tabs'
 import {
   listCampaigns, upsertCampaign, updateCampaignStatus, deleteCampaign,
-  listMessageTemplates, upsertMessageTemplate, dispatchCampaign,
+  listMessageTemplates, upsertMessageTemplate, dispatchCampaign, listCustomerTags,
 } from '@/lib/api'
-import type { Campaign, MessageTemplate } from '@/types'
+import type { Campaign, MessageTemplate, RecipientFilter, ManualRecipient } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import { fmtDateTime } from '@/lib/utils'
 import {
@@ -77,6 +77,39 @@ function extractComponent(components: unknown, type: string): string {
   return typeof c?.text === 'string' ? c.text : ''
 }
 
+// ─── Recipient filter options ─────────────────────────────────────────────────
+
+type FilterMode = 'all' | 'active' | 'lead' | 'active_and_lead' | 'tag' | 'manual'
+
+const FILTER_MODE_OPTIONS: { value: FilterMode; label: string; hint: string }[] = [
+  { value: 'all',             label: 'Todos os clientes', hint: 'Qualquer cliente com telefone cadastrado' },
+  { value: 'active',          label: 'Apenas ativos',     hint: 'Clientes com status "ativo"' },
+  { value: 'lead',            label: 'Apenas leads',      hint: 'Clientes com status "lead"' },
+  { value: 'active_and_lead', label: 'Ativos + leads',    hint: 'Clientes ativos ou leads' },
+  { value: 'tag',             label: 'Por tag',           hint: 'Clientes com uma tag específica' },
+  { value: 'manual',          label: 'Lista manual',      hint: 'Cole telefones manualmente (um por linha)' },
+]
+
+function filterModeOf(rf: RecipientFilter | undefined): FilterMode {
+  if (!rf || rf === 'all') return 'all'
+  if (rf === 'active' || rf === 'lead' || rf === 'active_and_lead' || rf === 'manual') return rf
+  if (rf.startsWith('tag:')) return 'tag'
+  return 'all'
+}
+
+function filterLabel(rf: RecipientFilter | undefined): string {
+  if (!rf || rf === 'all') return 'Todos'
+  if (rf === 'active') return 'Apenas ativos'
+  if (rf === 'lead') return 'Apenas leads'
+  if (rf === 'active_and_lead') return 'Ativos + leads'
+  if (rf === 'manual') return 'Lista manual'
+  if (rf.startsWith('tag:')) return `Tag: ${rf.slice(4)}`
+  return rf
+}
+
+// kept for backward-compat display in CampaignCard
+const RECIPIENT_FILTERS = FILTER_MODE_OPTIONS
+
 // ─── Campaign Card ────────────────────────────────────────────────────────────
 
 function CampaignCard({
@@ -111,8 +144,14 @@ function CampaignCard({
       <h3 className="text-sm font-semibold text-gray-900 mb-1">{c.name}</h3>
 
       {tmpl && (
-        <p className="text-xs text-gray-500 mb-2 truncate">
+        <p className="text-xs text-gray-500 mb-1 truncate">
           <FileText className="h-3 w-3 inline mr-1" />{tmpl.name}
+        </p>
+      )}
+      {c.recipient_filter && c.recipient_filter !== 'all' && (
+        <p className="text-xs text-brand-600 mb-2 truncate">
+          <Users className="h-3 w-3 inline mr-1" />
+          {filterLabel(c.recipient_filter)}
         </p>
       )}
 
@@ -184,7 +223,7 @@ function CampaignCard({
               <Edit3 className="h-3 w-3" /> Editar
             </Button>
           )}
-          {c.status === 'draft' && (
+          {(c.status === 'draft' || c.status === 'paused') && (
             <Button variant="ghost" size="sm" onClick={onDelete} className="text-red-500 hover:text-red-700 hover:bg-red-50">
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -236,7 +275,10 @@ function TemplateCard({
 
 // ─── Default forms ────────────────────────────────────────────────────────────
 
-const defaultCampaign: Partial<Campaign> = { name: '', status: 'draft', template_id: undefined, scheduled_at: undefined }
+const defaultCampaign: Partial<Campaign> = {
+  name: '', status: 'draft', template_id: undefined,
+  scheduled_at: undefined, recipient_filter: 'all', manual_recipients_json: [],
+}
 const TEMPLATE_TYPES = [
   { value: 'zapi',     label: 'Z-API (sem aprovação)'      },
   { value: 'official', label: 'API Oficial (requer aprovação Meta)' },
@@ -250,12 +292,16 @@ export default function CampanhasPage() {
   const [tab, setTab]                   = useState('campaigns')
   const [campaigns, setCampaigns]       = useState<Campaign[]>([])
   const [templates, setTemplates]       = useState<MessageTemplate[]>([])
+  const [allTags, setAllTags]           = useState<string[]>([])
   const [loading, setLoading]           = useState(true)
 
   // Campaign modal
-  const [cmpModal, setCmpModal]   = useState(false)
-  const [cmpForm, setCmpForm]     = useState<Partial<Campaign>>(defaultCampaign)
-  const [cmpSaving, setCmpSaving] = useState(false)
+  const [cmpModal, setCmpModal]     = useState(false)
+  const [cmpForm, setCmpForm]       = useState<Partial<Campaign>>(defaultCampaign)
+  const [filterMode, setFilterMode] = useState<FilterMode>('all')
+  const [tagSelection, setTagSel]   = useState('')
+  const [manualText, setManual]     = useState('')
+  const [cmpSaving, setCmpSaving]   = useState(false)
 
   // Template modal
   const [tmplModal, setTmplModal]   = useState(false)
@@ -265,10 +311,11 @@ export default function CampanhasPage() {
 
   const load = useCallback(() => {
     setLoading(true)
-    Promise.allSettled([listCampaigns(), listMessageTemplates()])
-      .then(([c, t]) => {
-        if (c.status === 'fulfilled') setCampaigns(c.value)
-        if (t.status === 'fulfilled') setTemplates(t.value)
+    Promise.allSettled([listCampaigns(), listMessageTemplates(), listCustomerTags()])
+      .then(([c, t, tags]) => {
+        if (c.status    === 'fulfilled') setCampaigns(c.value)
+        if (t.status    === 'fulfilled') setTemplates(t.value)
+        if (tags.status === 'fulfilled') setAllTags(tags.value)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -277,14 +324,56 @@ export default function CampanhasPage() {
 
   // ── Campaign CRUD ───────────────────────────────────────────────────────────
 
-  const openNewCampaign  = () => { setCmpForm(defaultCampaign); setCmpModal(true) }
-  const openEditCampaign = (c: Campaign) => { setCmpForm({ ...c }); setCmpModal(true) }
+  const openNewCampaign = () => {
+    setCmpForm(defaultCampaign)
+    setFilterMode('all')
+    setTagSel('')
+    setManual('')
+    setCmpModal(true)
+  }
+
+  const openEditCampaign = (c: Campaign) => {
+    setCmpForm({ ...c })
+    const mode = filterModeOf(c.recipient_filter)
+    setFilterMode(mode)
+    setTagSel(mode === 'tag' ? (c.recipient_filter ?? '').slice(4) : '')
+    if (mode === 'manual' && c.manual_recipients_json) {
+      setManual(
+        c.manual_recipients_json
+          .map((r) => r.name ? `${r.phone},${r.name}` : r.phone)
+          .join('\n')
+      )
+    } else {
+      setManual('')
+    }
+    setCmpModal(true)
+  }
+
+  const parseManualRecipients = (text: string): ManualRecipient[] =>
+    text.split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => {
+        const [phone, ...rest] = l.split(',')
+        return { phone: phone.trim(), name: rest.join(',').trim() || undefined }
+      })
 
   const handleSaveCampaign = async () => {
     if (!cmpForm.name?.trim()) { toast('Nome da campanha é obrigatório', 'error'); return }
+    if (filterMode === 'tag' && !tagSelection) { toast('Selecione uma tag', 'error'); return }
+    if (filterMode === 'manual' && !manualText.trim()) { toast('Adicione ao menos um telefone', 'error'); return }
+
+    const recipient_filter: RecipientFilter =
+      filterMode === 'tag' ? `tag:${tagSelection}` as RecipientFilter
+      : filterMode === 'manual' ? 'manual'
+      : filterMode as RecipientFilter
+
+    const manual_recipients_json: ManualRecipient[] =
+      filterMode === 'manual' ? parseManualRecipients(manualText) : []
+
     setCmpSaving(true)
     try {
-      await upsertCampaign(cmpForm)
+      await upsertCampaign({ ...cmpForm, recipient_filter, manual_recipients_json })
       toast(cmpForm.id ? 'Campanha atualizada' : 'Campanha criada')
       setCmpModal(false)
       load()
@@ -464,20 +553,50 @@ export default function CampanhasPage() {
               ...approvedTemplates.map((t) => ({ value: t.id, label: t.name })),
             ]}
           />
-          <Input
-            label="Número de destinatários"
-            type="number"
-            min={0}
-            value={cmpForm.target_count ?? ''}
-            onChange={(e) => setCmpForm((p) => ({ ...p, target_count: e.target.value ? Number(e.target.value) : undefined }))}
-            placeholder="Ex: 500"
-            hint="Deixe vazio para definir depois"
+          <Select
+            label="Destinatários"
+            value={filterMode}
+            onChange={(e) => {
+              const m = e.target.value as FilterMode
+              setFilterMode(m)
+              setTagSel('')
+              setManual('')
+            }}
+            options={FILTER_MODE_OPTIONS.map((r) => ({ value: r.value, label: r.label }))}
+            hint={FILTER_MODE_OPTIONS.find((r) => r.value === filterMode)?.hint}
           />
+          {filterMode === 'tag' && (
+            <Select
+              label="Selecionar tag *"
+              value={tagSelection}
+              onChange={(e) => setTagSel(e.target.value)}
+              options={[
+                { value: '', label: 'Escolha uma tag...' },
+                ...allTags.map((t) => ({ value: t, label: t })),
+              ]}
+            />
+          )}
+          {filterMode === 'manual' && (
+            <div>
+              <Textarea
+                label="Lista de telefones *"
+                rows={6}
+                value={manualText}
+                onChange={(e) => setManual(e.target.value)}
+                placeholder={`Um por linha. Formatos aceitos:\n5511999999999\n5511999999999,João Silva`}
+              />
+              {manualText.trim() && (
+                <p className="text-xs text-gray-400 mt-1">
+                  {parseManualRecipients(manualText).length} destinatários
+                </p>
+              )}
+            </div>
+          )}
           <Input
             label="Agendar para"
             type="datetime-local"
             value={cmpForm.scheduled_at ? cmpForm.scheduled_at.slice(0, 16) : ''}
-            onChange={(e) => setCmpForm((p) => ({ ...p, scheduled_at: e.target.value ? e.target.value + ':00' : undefined }))}
+            onChange={(e) => { setCmpForm((p) => ({ ...p, scheduled_at: e.target.value ? e.target.value + ':00' : undefined })); e.target.blur() }}
             hint="Deixe vazio para iniciar manualmente"
           />
           <div className="flex justify-end gap-2 pt-2">

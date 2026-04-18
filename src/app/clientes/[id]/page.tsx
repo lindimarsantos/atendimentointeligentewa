@@ -1,17 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
-import { getCustomer, getCustomerMemories, listConversations, listAppointments } from '@/lib/api'
+import { Button } from '@/components/ui/Button'
+import {
+  getCustomer, getCustomerMemories, listConversations, listAppointments,
+  updateCustomerTags, listCustomerTags, autoTagCustomers, updateCustomer,
+} from '@/lib/api'
 import type { Customer, CustomerMemory, Conversation, Appointment } from '@/types'
 import { fmtDateTime, fmtDate, memoryTypeVariants, statusVariants, timeAgo } from '@/lib/utils'
 import {
   ArrowLeft, User, Phone, Mail, Brain, AlertCircle,
-  MessageSquare, CalendarCheck, Tag,
+  MessageSquare, CalendarCheck, Tag, X, Plus, Sparkles, Edit3, Save,
 } from 'lucide-react'
+import { toast } from '@/components/ui/Toast'
 
 const memoryTypeLabel: Record<string, string> = {
   profile:             'Perfil',
@@ -51,13 +55,274 @@ function tagColor(tag: string) {
   return TAG_COLORS[h % TAG_COLORS.length]
 }
 
+const CUSTOMER_STATUS_OPTIONS = [
+  { value: 'active',   label: 'Ativo'   },
+  { value: 'lead',     label: 'Lead'    },
+  { value: 'inactive', label: 'Inativo' },
+]
+
+// ─── Customer Edit Form ───────────────────────────────────────────────────────
+
+function CustomerEditForm({
+  customer,
+  onSaved,
+  onCancel,
+}: {
+  customer: Customer
+  onSaved: (updated: Partial<Customer>) => void
+  onCancel: () => void
+}) {
+  const [form, setForm] = useState({
+    full_name:  customer.name   ?? '',
+    phone_e164: customer.phone  ?? '',
+    email:      customer.email  ?? '',
+    status:     customer.status ?? 'lead',
+    notes:      customer.notes  ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm((p) => ({ ...p, [k]: e.target.value }))
+
+  const save = async () => {
+    if (!form.full_name.trim()) { toast('Nome é obrigatório', 'error'); return }
+    if (!form.phone_e164.trim()) { toast('Telefone é obrigatório', 'error'); return }
+    setSaving(true)
+    try {
+      await updateCustomer(customer.id, form)
+      onSaved({
+        name:   form.full_name,
+        phone:  form.phone_e164,
+        email:  form.email || undefined,
+        status: form.status,
+        notes:  form.notes || undefined,
+      })
+      toast('Dados salvos')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputCls = 'w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500'
+
+  return (
+    <div className="space-y-2.5">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Nome *</label>
+        <input className={inputCls} value={form.full_name} onChange={set('full_name')} placeholder="Nome completo" />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Telefone *</label>
+        <input className={inputCls} value={form.phone_e164} onChange={set('phone_e164')} placeholder="+5511999999999" />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">E-mail</label>
+        <input className={inputCls} type="email" value={form.email} onChange={set('email')} placeholder="email@exemplo.com" />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Status</label>
+        <select className={inputCls} value={form.status} onChange={set('status')}>
+          {CUSTOMER_STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Observações</label>
+        <textarea
+          className={inputCls + ' resize-none'}
+          rows={3}
+          value={form.notes}
+          onChange={set('notes')}
+          placeholder="Informações adicionais sobre o cliente..."
+        />
+      </div>
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" onClick={save} loading={saving}>
+          <Save className="h-3 w-3" /> Salvar
+        </Button>
+        <Button size="sm" variant="secondary" onClick={onCancel}>
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tag Editor ───────────────────────────────────────────────────────────────
+
+function TagEditor({
+  customerId,
+  initialTags,
+  onSaved,
+}: {
+  customerId: string
+  initialTags: string[]
+  onSaved: (tags: string[]) => void
+}) {
+  const [tags, setTags]             = useState<string[]>(initialTags)
+  const [input, setInput]           = useState('')
+  const [suggestions, setSugg]      = useState<string[]>([])
+  const [allTags, setAllTags]       = useState<string[]>([])
+  const [saving, setSaving]         = useState(false)
+  const [autoTagging, setAutoTag]   = useState(false)
+  const [dirty, setDirty]           = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    listCustomerTags().then(setAllTags).catch(() => {})
+  }, [])
+
+  const filtered = allTags.filter(
+    (t) => t.toLowerCase().includes(input.toLowerCase()) && !tags.includes(t)
+  )
+
+  const addTag = (tag: string) => {
+    const t = tag.trim().toLowerCase().replace(/\s+/g, '-')
+    if (!t || tags.includes(t)) return
+    const next = [...tags, t]
+    setTags(next)
+    setInput('')
+    setSugg([])
+    setDirty(true)
+  }
+
+  const removeTag = (tag: string) => {
+    setTags((prev) => prev.filter((t) => t !== tag))
+    setDirty(true)
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await updateCustomerTags(customerId, tags)
+      setDirty(false)
+      onSaved(tags)
+      toast('Tags salvas')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar tags', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const runAutoTag = async () => {
+    setAutoTag(true)
+    try {
+      await autoTagCustomers()
+      const updated = await import('@/lib/api').then((m) => m.getCustomer(customerId))
+      if (updated?.tags) {
+        setTags(updated.tags)
+        onSaved(updated.tags)
+        setDirty(false)
+      }
+      toast('Tags automáticas aplicadas')
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao aplicar auto-tags', 'error')
+    } finally {
+      setAutoTag(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Current tags */}
+      <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+        {tags.length === 0 && (
+          <span className="text-xs text-gray-400 italic">Nenhuma tag</span>
+        )}
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${tagColor(tag)}`}
+          >
+            {tag}
+            <button
+              onClick={() => removeTag(tag)}
+              className="opacity-60 hover:opacity-100 transition-opacity"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          </span>
+        ))}
+      </div>
+
+      {/* Input */}
+      <div className="relative">
+        <div className="flex gap-1.5">
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value)
+              setSugg(filtered.slice(0, 6))
+            }}
+            onFocus={() => setSugg(filtered.slice(0, 6))}
+            onBlur={() => setTimeout(() => setSugg([]), 150)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); addTag(input) }
+              if (e.key === 'Escape') setSugg([])
+            }}
+            placeholder="Nova tag..."
+            className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <button
+            onClick={() => addTag(input)}
+            disabled={!input.trim()}
+            className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-40 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Suggestions */}
+        {suggestions.length > 0 && (
+          <div className="absolute left-0 right-8 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                onMouseDown={() => addTag(s)}
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors"
+              >
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${tagColor(s)}`}>
+                  {s}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={save} loading={saving} disabled={!dirty}>
+          Salvar tags
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={runAutoTag}
+          loading={autoTagging}
+        >
+          <Sparkles className="h-3 w-3" /> Auto-tag
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function ClienteDetalhePage() {
   const { id } = useParams<{ id: string }>()
-  const [customer, setCustomer]   = useState<Customer | null>(null)
-  const [memories, setMemories]   = useState<CustomerMemory[]>([])
-  const [convs, setConvs]         = useState<Conversation[]>([])
-  const [apts, setApts]           = useState<Appointment[]>([])
-  const [loading, setLoading]     = useState(true)
+  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [memories, setMemories] = useState<CustomerMemory[]>([])
+  const [convs, setConvs]       = useState<Conversation[]>([])
+  const [apts, setApts]         = useState<Appointment[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [editing, setEditing]   = useState(false)
 
   useEffect(() => {
     Promise.allSettled([
@@ -103,41 +368,73 @@ export default function ClienteDetalhePage() {
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Dados do cliente</CardTitle>
+            {!editing && (
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-brand-600 transition-colors"
+              >
+                <Edit3 className="h-3.5 w-3.5" /> Editar
+              </button>
+            )}
           </CardHeader>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <User className="h-4 w-4 text-gray-400 shrink-0" />
-              <span className="text-gray-700">{customer.name}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Phone className="h-4 w-4 text-gray-400 shrink-0" />
-              <span className="text-gray-700">{customer.phone}</span>
-            </div>
-            {customer.email && (
+
+          {editing ? (
+            <CustomerEditForm
+              customer={customer}
+              onSaved={(updated) => {
+                setCustomer((c) => c ? { ...c, ...updated } : c)
+                setEditing(false)
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          ) : (
+            <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-gray-400 shrink-0" />
-                <span className="text-gray-700">{customer.email}</span>
+                <User className="h-4 w-4 text-gray-400 shrink-0" />
+                <span className="text-gray-700">{customer.name}</span>
               </div>
-            )}
-            {customer.tags && customer.tags.length > 0 && (
-              <div className="flex items-start gap-2">
-                <Tag className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
-                <div className="flex flex-wrap gap-1">
-                  {customer.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${tagColor(tag)}`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="h-4 w-4 text-gray-400 shrink-0" />
+                <span className="text-gray-700">{customer.phone}</span>
+              </div>
+              {customer.email && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-gray-400 shrink-0" />
+                  <span className="text-gray-700">{customer.email}</span>
                 </div>
+              )}
+              {customer.status && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-400 text-xs">Status:</span>
+                  <span className="text-gray-700 capitalize">
+                    {CUSTOMER_STATUS_OPTIONS.find((o) => o.value === customer.status)?.label ?? customer.status}
+                  </span>
+                </div>
+              )}
+              {customer.notes && (
+                <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+                  {customer.notes}
+                </div>
+              )}
+
+              {/* Tag editor */}
+              <div className="pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Tag className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="text-xs font-medium text-gray-600">Tags</span>
+                </div>
+                <TagEditor
+                  customerId={id}
+                  initialTags={customer.tags ?? []}
+                  onSaved={(tags) => setCustomer((c) => c ? { ...c, tags } : c)}
+                />
               </div>
-            )}
-            <div className="pt-2 border-t border-gray-100">
-              <p className="text-xs text-gray-400">Cliente desde {fmtDateTime(customer.created_at)}</p>
+
+              <div className="pt-2 border-t border-gray-100">
+                <p className="text-xs text-gray-400">Cliente desde {fmtDateTime(customer.created_at)}</p>
+              </div>
             </div>
-          </div>
+          )}
         </Card>
 
         {/* Memories */}

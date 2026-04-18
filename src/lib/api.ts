@@ -12,6 +12,7 @@ import type {
   Conversation,
   Message,
   Customer,
+  ManualRecipient,
   Appointment,
   Service,
   Professional,
@@ -46,18 +47,21 @@ import type {
   BusinessContact,
   ApiKeys,
   UserTenantMembership,
+  OperationalStats,
+  RecipientFilter,
+  ProfessionalCalendar,
 } from '@/types'
 
 async function rpc<T>(name: string, params: Record<string, unknown> = {}): Promise<T> {
   const { data, error } = await supabase.rpc(name, params)
-  if (error) throw error
+  if (error) throw new Error(error.message ?? error.details ?? 'Erro desconhecido')
   return data as T
 }
 
 // json_agg() returns NULL for empty tables — always return [] instead of null
 async function rpcList<T>(name: string, params: Record<string, unknown> = {}): Promise<T[]> {
   const { data, error } = await supabase.rpc(name, params)
-  if (error) throw error
+  if (error) throw new Error(error.message ?? error.details ?? 'Erro desconhecido')
   return (data as T[] | null) ?? []
 }
 
@@ -65,6 +69,10 @@ async function rpcList<T>(name: string, params: Record<string, unknown> = {}): P
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   return rpc('rpc_dashboard_summary', { p_tenant_id: getTenantId() })
+}
+
+export async function getOperationalStats(): Promise<OperationalStats> {
+  return rpc('rpc_get_operational_stats', { p_tenant_id: getTenantId() })
 }
 
 export async function getConversationsTrend(days = 30): Promise<DailyMetric[]> {
@@ -92,13 +100,14 @@ export async function getConversationMessages(conversationId: string): Promise<M
   })
 }
 
-// Agent identity — populated by AuthContext; falls back to anonymous placeholder
+const PLACEHOLDER_UUID = '00000000-0000-0000-0000-000000000001'
 
 export async function assumirConversa(conversationId: string, agentId?: string): Promise<void> {
+  const userId = agentId ?? getCurrentAgentId()
   await rpc('rpc_assumir_conversa', {
     p_tenant_id: getTenantId(),
     p_conversation_id: conversationId,
-    p_user_id: agentId ?? getCurrentAgentId(),
+    p_user_id: userId === PLACEHOLDER_UUID ? null : userId,
     p_user_name: getCurrentAgentName(),
   })
 }
@@ -122,12 +131,38 @@ export async function encerrarConversa(conversationId: string): Promise<void> {
   })
 }
 
+export async function agentSendMessage(
+  conversationId: string,
+  messageText: string,
+): Promise<{ customer_phone: string; zapi_instance_id: string; zapi_token: string; zapi_client_token: string }> {
+  return rpc('rpc_agent_send_message', {
+    p_tenant_id: getTenantId(),
+    p_conversation_id: conversationId,
+    p_message_text: messageText,
+  })
+}
+
+export async function devolverAoBot(conversationId: string): Promise<void> {
+  await rpc('rpc_devolver_ao_bot', {
+    p_tenant_id: getTenantId(),
+    p_conversation_id: conversationId,
+  })
+}
+
+export async function reabrirConversa(conversationId: string): Promise<void> {
+  await rpc('rpc_reabrir_conversa', {
+    p_tenant_id: getTenantId(),
+    p_conversation_id: conversationId,
+  })
+}
+
 // ─── Customers ───────────────────────────────────────────────────────────────
 
-export async function listCustomers(search?: string): Promise<Customer[]> {
+export async function listCustomers(search?: string, tag?: string): Promise<Customer[]> {
   return rpcList('rpc_list_customers', {
     p_tenant_id: getTenantId(),
     p_search: search ?? null,
+    p_tag: tag ?? null,
   })
 }
 
@@ -135,6 +170,40 @@ export async function getCustomer(customerId: string): Promise<Customer | null> 
   return rpc('rpc_get_customer', {
     p_tenant_id: getTenantId(),
     p_customer_id: customerId,
+  })
+}
+
+export async function updateCustomerTags(customerId: string, tags: string[]): Promise<void> {
+  await rpc('rpc_update_customer_tags', {
+    p_tenant_id: getTenantId(),
+    p_customer_id: customerId,
+    p_tags: tags,
+  })
+}
+
+export async function listCustomerTags(): Promise<string[]> {
+  return rpcList('rpc_list_customer_tags', { p_tenant_id: getTenantId() })
+}
+
+export async function autoTagCustomers(): Promise<{ updated: number }> {
+  return rpc('rpc_auto_tag_customers', { p_tenant_id: getTenantId() })
+}
+
+export async function updateCustomer(customerId: string, data: {
+  full_name?: string
+  phone_e164?: string
+  email?: string
+  status?: string
+  notes?: string
+}): Promise<void> {
+  await rpc('rpc_update_customer', {
+    p_tenant_id:   getTenantId(),
+    p_customer_id: customerId,
+    p_full_name:   data.full_name   ?? null,
+    p_phone_e164:  data.phone_e164  ?? null,
+    p_email:       data.email       ?? null,
+    p_status:      data.status      ?? null,
+    p_notes:       data.notes       ?? null,
   })
 }
 
@@ -269,13 +338,15 @@ export async function listCampaigns(): Promise<Campaign[]> {
 
 export async function upsertCampaign(data: Partial<Campaign>): Promise<void> {
   await rpc('rpc_upsert_campaign', {
-    p_tenant_id:    getTenantId(),
-    p_id:           data.id ?? null,
-    p_name:         data.name,
-    p_template_id:  data.template_id ?? null,
-    p_target_count: data.target_count ?? null,
-    p_scheduled_at: data.scheduled_at ?? null,
-    p_status:       data.status ?? 'draft',
+    p_tenant_id:              getTenantId(),
+    p_id:                     data.id ?? null,
+    p_name:                   data.name,
+    p_template_id:            data.template_id ?? null,
+    p_target_count:           data.target_count ?? null,
+    p_scheduled_at:           data.scheduled_at ?? null,
+    p_status:                 data.status ?? 'draft',
+    p_recipient_filter:       data.recipient_filter ?? 'all',
+    p_manual_recipients_json: data.manual_recipients_json ?? [],
   })
 }
 
@@ -369,6 +440,7 @@ export async function updateAiAgentProfile(
     p_use_recommendations: data.use_recommendations,
     p_use_scheduling: data.use_scheduling,
     p_allow_voice_response: data.allow_voice_response,
+    p_restrict_to_configured_services: data.restrict_to_configured_services,
   })
 }
 
@@ -453,6 +525,8 @@ export async function updateChannelSettings(data: Partial<ChannelSettings>): Pro
     p_handoff_message: data.handoff_message,
     p_buffer_active: data.buffer_active,
     p_typing_simulation: data.typing_simulation,
+    p_scheduling_followup_message:   data.scheduling_followup_message,
+    p_scheduling_followup_message_2: data.scheduling_followup_message_2,
   })
 }
 
@@ -544,6 +618,44 @@ export async function deleteSlaRule(id: string): Promise<void> {
 
 export async function deleteFeatureFlag(code: string): Promise<void> {
   await rpc('rpc_delete_feature_flag', { p_tenant_id: getTenantId(), p_code: code })
+}
+
+// ─── Google Calendar ──────────────────────────────────────────────────────────
+
+export async function listProfessionalCalendars(professionalId?: string): Promise<ProfessionalCalendar[]> {
+  return rpcList('rpc_list_professional_calendars', {
+    p_tenant_id:       getTenantId(),
+    p_professional_id: professionalId ?? null,
+  })
+}
+
+export async function upsertProfessionalCalendar(data: {
+  id?:                     string
+  professional_id:         string
+  calendar_id:             string
+  calendar_name?:          string
+  sync_direction?:         string
+  is_primary?:             boolean
+  oauth_refresh_token?:    string
+  oauth_access_token?:     string
+  oauth_token_expires_at?: string
+}): Promise<ProfessionalCalendar> {
+  return rpc('rpc_upsert_professional_calendar', {
+    p_tenant_id:              getTenantId(),
+    p_professional_id:        data.professional_id,
+    p_calendar_id:            data.calendar_id,
+    p_calendar_name:          data.calendar_name ?? null,
+    p_sync_direction:         data.sync_direction ?? 'write',
+    p_is_primary:             data.is_primary ?? true,
+    p_oauth_refresh_token:    data.oauth_refresh_token ?? null,
+    p_oauth_access_token:     data.oauth_access_token ?? null,
+    p_oauth_token_expires_at: data.oauth_token_expires_at ?? null,
+    p_id:                     data.id ?? null,
+  })
+}
+
+export async function deleteProfessionalCalendar(id: string): Promise<void> {
+  await rpc('rpc_delete_professional_calendar', { p_tenant_id: getTenantId(), p_id: id })
 }
 
 export async function listHandoffRules(): Promise<HandoffRule[]> {

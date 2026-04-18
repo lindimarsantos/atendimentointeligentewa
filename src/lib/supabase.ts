@@ -1,15 +1,18 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const DEFAULT_URL   = 'https://jxqnfzujsgtzzjabvplm.supabase.co'
 const DEFAULT_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cW5menVqc2d0enpqYWJ2cGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDIzNzYsImV4cCI6MjA5MTAxODM3Nn0.LSeDBTdAcPDQmabe50EJtEWdFExUjINL5pc5MbmN4I8'
 
 let _client: SupabaseClient | null = null
 
+// createBrowserClient stores the session in cookies (instead of localStorage)
+// so Next.js middleware can read the session server-side on every request.
 function getClient(): SupabaseClient {
   if (!_client) {
     const url  = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? DEFAULT_URL
     const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? DEFAULT_ANON
-    _client = createClient(url, anon)
+    _client = createBrowserClient(url, anon) as unknown as SupabaseClient
   }
   return _client
 }
