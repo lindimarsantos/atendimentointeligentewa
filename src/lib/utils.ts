@@ -1,15 +1,26 @@
 import { clsx, type ClassValue } from 'clsx'
-import { format, formatDistanceToNow, parseISO } from 'date-fns'
+import { formatDistanceToNow, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs)
 }
 
+const TZ = 'America/Sao_Paulo'
+
+function brtParts(dateStr: string, opts: Intl.DateTimeFormatOptions) {
+  const parts: Record<string, string> = {}
+  new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, ...opts })
+    .formatToParts(new Date(dateStr))
+    .forEach(p => { parts[p.type] = p.value })
+  return parts
+}
+
 export function fmtDateTime(dateStr: string | null | undefined): string {
   if (!dateStr) return '—'
   try {
-    return format(parseISO(dateStr), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+    const p = brtParts(dateStr, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+    return `${p.day}/${p.month}/${p.year} às ${p.hour}:${p.minute}`
   } catch {
     return dateStr
   }
@@ -18,7 +29,8 @@ export function fmtDateTime(dateStr: string | null | undefined): string {
 export function fmtDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—'
   try {
-    return format(parseISO(dateStr), 'dd/MM/yyyy', { locale: ptBR })
+    const p = brtParts(dateStr, { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return `${p.day}/${p.month}/${p.year}`
   } catch {
     return dateStr
   }
@@ -27,7 +39,8 @@ export function fmtDate(dateStr: string | null | undefined): string {
 export function fmtTime(dateStr: string | null | undefined): string {
   if (!dateStr) return '—'
   try {
-    return format(parseISO(dateStr), 'HH:mm', { locale: ptBR })
+    const p = brtParts(dateStr, { hour: '2-digit', minute: '2-digit', hour12: false })
+    return `${p.hour}:${p.minute}`
   } catch {
     return dateStr
   }
