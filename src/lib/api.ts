@@ -49,6 +49,7 @@ import type {
   UserTenantMembership,
   OperationalStats,
   RecipientFilter,
+  ProfessionalCalendar,
 } from '@/types'
 
 async function rpc<T>(name: string, params: Record<string, unknown> = {}): Promise<T> {
@@ -617,6 +618,44 @@ export async function deleteSlaRule(id: string): Promise<void> {
 
 export async function deleteFeatureFlag(code: string): Promise<void> {
   await rpc('rpc_delete_feature_flag', { p_tenant_id: getTenantId(), p_code: code })
+}
+
+// ─── Google Calendar ──────────────────────────────────────────────────────────
+
+export async function listProfessionalCalendars(professionalId?: string): Promise<ProfessionalCalendar[]> {
+  return rpcList('rpc_list_professional_calendars', {
+    p_tenant_id:       getTenantId(),
+    p_professional_id: professionalId ?? null,
+  })
+}
+
+export async function upsertProfessionalCalendar(data: {
+  id?:                     string
+  professional_id:         string
+  calendar_id:             string
+  calendar_name?:          string
+  sync_direction?:         string
+  is_primary?:             boolean
+  oauth_refresh_token?:    string
+  oauth_access_token?:     string
+  oauth_token_expires_at?: string
+}): Promise<ProfessionalCalendar> {
+  return rpc('rpc_upsert_professional_calendar', {
+    p_tenant_id:              getTenantId(),
+    p_professional_id:        data.professional_id,
+    p_calendar_id:            data.calendar_id,
+    p_calendar_name:          data.calendar_name ?? null,
+    p_sync_direction:         data.sync_direction ?? 'write',
+    p_is_primary:             data.is_primary ?? true,
+    p_oauth_refresh_token:    data.oauth_refresh_token ?? null,
+    p_oauth_access_token:     data.oauth_access_token ?? null,
+    p_oauth_token_expires_at: data.oauth_token_expires_at ?? null,
+    p_id:                     data.id ?? null,
+  })
+}
+
+export async function deleteProfessionalCalendar(id: string): Promise<void> {
+  await rpc('rpc_delete_professional_calendar', { p_tenant_id: getTenantId(), p_id: id })
 }
 
 export async function listHandoffRules(): Promise<HandoffRule[]> {

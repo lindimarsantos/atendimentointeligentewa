@@ -1,106 +1,117 @@
 # Project State — Atendimento Inteligente WA
-
-> Última atualização: 2026-04-10 (sessão 2)
-
----
-
-## ✅ Concluído
-
-### Core da plataforma
-- [x] Next.js 14 App Router + TypeScript + Tailwind
-- [x] Layout com sidebar (11 rotas)
-- [x] Supabase client com TENANT_ID e CHANNEL_ID
-- [x] `src/lib/api.ts` — todas as funções de acesso a dados implementadas
-- [x] `src/types/index.ts` — tipos completos para todos os módulos
-- [x] UI library compartilhada (`src/components/ui/`)
-
-### Módulo 10: Configurações de IA e Atendimento
-- [x] Página `/configuracoes` com 7 tabs
-- [x] `PerfilAgente` — nome, tom, verbosidade, objetivo, capacidades
-- [x] `PromptModelo` — modelo LLM, system prompt, temperatura, templates
-- [x] `DadosNegocio` — visão de serviços, profissionais, horários (read-only)
-- [x] `MensagensCanal` — boas-vindas, fora-horário, handoff, buffer, typing
-- [x] `RegrasComportamento` — handoff rules, SLA, feature flags
-- [x] `Voz` — perfis ElevenLabs (CRUD)
-- [x] `GeralTenant` — identidade, modo intake, mídia, automação
-- [x] Fix null-state: todos os tabs inicializam com defaults quando sem dados
-- [x] Migrations 001–003 aplicadas (RPCs de configuração, auditoria, trends)
-
-### Analytics e ROI
-- [x] KPIs de performance da IA (bot_resolution_rate, handoff_rate, tempos médios)
-- [x] KPIs operacionais (mensagens, resolvidas, agendamentos, clientes ativos)
-- [x] Gráfico de área — tendência de conversas (resolved, handoffs) com período 7/14/30 dias
-- [x] Gráfico de barras — agendamentos (total, realizados, cancelados)
-- [x] Progress bars — eficiência da IA e distribuição de status de conversas
-
-### Billing e Uso
-- [x] Plano atual com badge de status
-- [x] Barras de consumo por recurso (mensagens, conversas, agendamentos, jobs, clientes)
-- [x] Estatísticas operacionais em cards (mensagens, jobs, lembretes, clientes novos)
-
-### Administração
-- [x] Tab Feature Flags — lista com toggle ativo/inativo (persiste via `updateFeatureFlag`)
-- [x] Tab Tenant — visão de configurações do tenant com link para edição em /configuracoes
-
-### Outros módulos (estrutura existe)
-- [x] Rotas criadas para: atendimento, clientes, agenda, serviços, campanhas, analytics, billing, administração, observabilidade
+> Atualizado: 2026-04-18 | Migration atual: 085 | Branch: claude/resume-session-2fEn8
 
 ---
 
-## 📋 Backlog (próximas sessões)
-
-### Dashboard (Visão Geral)
-- [x] 6 KPIs (clientes, conversas, handoff, resolvidas, agendamentos, taxa IA)
-- [x] Gráfico de área — tendência de conversas (7/14/30 dias)
-- [x] Gráfico de barras — agendamentos por dia
-- [x] Donuts — distribuição de status + eficiência da IA
-- [x] Métricas operacionais (mensagens, jobs, lembretes)
-- [x] Listas recentes: conversas + agendamentos
-- [x] Alerta banner para conversas aguardando humano
-
-### Atendimento
-- [x] Lista com filtro por status (5 tabs)
-- [x] Interface de chat (bolhas inbound/outbound + badges de intenção)
-- [x] Ações: assumir, encerrar, registrar nota
-- [x] Painel lateral: Resumo IA, Memórias do cliente, Timeline de decisões
-
-### Clientes
-- [x] Lista com busca e tags coloridas
-- [x] Perfil com dados, memórias da IA, histórico de conversas e agendamentos
-- [x] Performance fix: conversas e agendamentos filtrados por customer_id no banco (migration 022)
-
-### Observabilidade
-- [x] Job Queue — fila com status, tipo, erro, data
-- [x] Auditoria — logs de auditoria
-- [x] Integrações — integration logs
-
-### Agentes de IA
-- [x] Página `/agentes` com card de identidade do agente (nome, modelo, tom, temperatura)
-- [x] Capacidades habilitadas (memória, recomendações, agendamento, voz)
-- [x] KPIs em tempo real: sessões ativas, conversas resolvidas, taxa IA, aguardando humano
-- [x] Preview do system prompt
-- [x] Lista de sessões bot_active em andamento com link para atendimento
-- [x] Sidebar atualizado com rota /agentes
-
-### Campanhas — Dispatch via n8n
-- [x] Botão "Disparar" em campanhas (draft/paused/scheduled) — marca como 'running'
-- [x] Migration 022: `rpc_dispatch_campaign` — valida status, muda para running
-- [x] Migration 023: `rpc_list_running_campaigns`, `rpc_complete_campaign`
-- [x] Workflow n8n: `n8n/workflows/campaigns-dispatcher.json` (cron 10min, pronto para importar)
-- [x] Workflow processa: busca running → pega clientes → substitui variáveis → envia Z-API → finaliza
-- [x] `n8n/README.md` — guia de importação e variáveis necessárias
-
-### Configurações — melhorias futuras
-- [ ] Tab `DadosNegócio`: permitir edição de horários via `rpc_update_business_hours`
-- [ ] Autenticação multi-tenant (Supabase Auth)
-- [ ] Confirmar webhook path de campanhas no n8n (aguardando URL de produção)
+## Objetivo
+Plataforma SaaS multi-tenant de atendimento via WhatsApp com IA. Clínicas e empresas de serviço como foco inicial. IA atende, agenda, faz handoff, gera analytics. Operação configurável sem código.
 
 ---
 
-## ⚠️ Alertas
+## Arquitetura Principal
+```
+WhatsApp (Z-API) → n8n (inbound) → Supabase (RPCs) → n8n (AI Agent / workers)
+                                                     → Dashboard (Next.js/Vercel)
+```
+- **Auth**: Supabase Auth com cookies (`@supabase/ssr`) + middleware Edge
+- **Dados**: Supabase PostgreSQL multi-tenant, acesso exclusivo via RPCs
+- **Automação**: n8n como orquestrador (8 workflows ativos)
+- **IA**: Claude claude-sonnet-4-6 via n8n AI Agent node
 
-| Item | Nível | Descrição |
-|------|-------|-----------|
-| `rpc_update_ai_agent` | MÉDIO | Apenas UPDATE, sem INSERT. Se `ai.ai_agents` não tiver linha para o tenant, save silencia. |
-| TENANT_ID hardcoded | MÉDIO | Substitua por auth dinâmica antes de multi-tenant. |
-| Sem autenticação | MÉDIO | Rotas não têm proteção de sessão ainda. |
+---
+
+## Fases de Implementação
+
+### Fase 1 — Banco e consistência ✅ COMPLETA
+- Migrations 001–084 aplicadas
+- Todos os schemas criados: core, crm, messaging, scheduling, ai, config, ops, billing, iam, audit, observability
+- RPCs completos para todos os módulos
+- UNIQUE(tenant_id) em ai.ai_agents adicionado (084)
+
+### Fase 2 — n8n inbound/outbound ✅ COMPLETA
+- WA - Inbound Intake ✅
+- WA - AI Agent ✅ (substituiu WA - Decision and Buffered Reply — inativo, pode ser arquivado)
+- WA - Outbound Worker ✅
+- Transfer intent interceptado em `rpc_take_conversation_batch` (079)
+- Business hours enforcement ativo (078)
+
+### Fase 3 — Agenda ✅ COMPLETA
+- Scheduling - Appointment Flow ✅
+- Scheduling - Reminder Worker ✅
+- Scheduling Follow-up — Sem Resposta ✅ (corrigido 082)
+- **Google Calendar integration** ✅ IMPLEMENTADA (migration 085 + workflow n8n + UI dashboard)
+- **Geração de slots** ✅ `rpc_n8n_get_slots` + `rpc_get_available_slots` implementados
+
+### Fase 4 — Dashboard ✅ MAJORITARIAMENTE COMPLETA
+Todos os módulos com UI implementada:
+- Visão Geral (KPIs, charts, período customizável)
+- Atendimento (chat + handoff)
+- Clientes (CRM + perfil)
+- Agenda, Serviços, Agentes, Campanhas
+- Analytics, Billing, Observabilidade, Administração
+- Configurações (10 tabs funcionais)
+- Auth completo (login, forgot, reset password)
+- Middleware de proteção de rotas ✅
+
+### Fase 5 — Operação avançada ⚠️ PARCIAL
+- Campaigns - Dispatcher ✅ (corrigido 081/082)
+- **Ops - General Queue Worker** ❌ workflow n8n não criado
+- **WA - Voice Reply Worker** ❌ workflow n8n não criado
+- **Observability - Event Consumer** ❌ workflow n8n não criado
+
+---
+
+## O que Está Funcionando em Produção
+
+### n8n workflows ativos
+1. WA - Inbound Intake — recebe mensagens WhatsApp
+2. WA - AI Agent — processa e responde com IA
+3. WA - Outbound Worker — envia mensagens da fila (cron 15s)
+4. Scheduling - Appointment Flow — cria agendamentos
+5. Scheduling - Reminder Worker — envia lembretes
+6. Scheduling Follow-up — Sem Resposta — follow-up automático (cron 2h)
+7. Campaigns - Dispatcher — dispara campanhas (cron 10min)
+8. Scheduling - Google Calendar Sync — sincroniza agendamentos → Google Calendar (cron 2min) ⚠️ Requer configuração de credenciais
+
+### Dashboard
+- Todas as rotas acessíveis e funcionais
+- Auth multi-tenant com seleção de tenant por usuário
+
+---
+
+## O que Falta Implementar
+
+### Alta prioridade
+| Item | Tipo | Fase |
+|---|---|---|
+| Google Calendar — configurar credenciais n8n | Configuração | 3 |
+| WA - Voice Reply Worker | workflow n8n | 5 |
+| Observability - Event Consumer | workflow n8n | 5 |
+| Ops - General Queue Worker | workflow n8n | 5 |
+
+### Média prioridade
+| Item | Tipo |
+|---|---|
+| Arquivar WA - Decision and Buffered Reply | n8n cleanup |
+| Verificar geração de slots de agenda | Scheduling |
+| Verificar se Voice Reply está dentro do WA - AI Agent | Investigação |
+
+---
+
+## Princípios que Não Podem Ser Quebrados
+1. `tenant_id` obrigatório em toda operação
+2. Dados só via RPCs (`public.*`)
+3. Migrations sequenciais (próxima: 085)
+4. Auth via `@supabase/ssr` (cookies, não localStorage)
+5. Frontend sem acesso direto ao Supabase
+6. n8n como único orquestrador de automações
+
+---
+
+## Alertas Ativos
+| Item | Nível | Status |
+|---|---|---|
+| WA - Decision and Buffered Reply | INFO | Inativo — substituído por WA - AI Agent. Arquivar. |
+| Google Calendar — credenciais n8n | MÉDIA | Workflow criado (U9BZl6uSy8RINGJ6). Editar nó "Parse Appointments" com CLIENT_ID e CLIENT_SECRET. Configurar credencial "Supabase Service Role". |
+| WA - Voice Reply Worker | MÉDIA | Não existe como workflow separado |
+| Observability - Event Consumer | BAIXA | Não implementado |

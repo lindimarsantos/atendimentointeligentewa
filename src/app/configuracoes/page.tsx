@@ -12,9 +12,10 @@ import { GeralTenant }        from '@/components/modules/Configuracoes/GeralTena
 import { Lembretes }          from '@/components/modules/Configuracoes/Lembretes'
 import { ApiKeys }            from '@/components/modules/Configuracoes/ApiKeys'
 import { IntegracaoWhatsApp } from '@/components/modules/Configuracoes/IntegracaoWhatsApp'
+import { GoogleCalendar }     from '@/components/modules/Configuracoes/GoogleCalendar'
 import {
   User, Code2, Database, MessageSquare,
-  ShieldCheck, Mic, Settings, Bell, KeyRound, Smartphone,
+  ShieldCheck, Mic, Settings, Bell, KeyRound, Smartphone, CalendarDays,
 } from 'lucide-react'
 
 const tabs = [
@@ -22,6 +23,7 @@ const tabs = [
   { id: 'prompt',      label: 'Prompt e Modelo',        icon: Code2         },
   { id: 'apikeys',     label: 'Chaves de API',          icon: KeyRound      },
   { id: 'whatsapp',    label: 'Integração WhatsApp',    icon: Smartphone    },
+  { id: 'gcalendar',   label: 'Google Calendar',        icon: CalendarDays  },
   { id: 'negocio',     label: 'Dados do Negócio',       icon: Database      },
   { id: 'mensagens',   label: 'Mensagens do Canal',     icon: MessageSquare },
   { id: 'regras',      label: 'Regras de Comportamento',icon: ShieldCheck   },
@@ -49,6 +51,7 @@ export default function ConfiguracoesPage() {
         {tab === 'prompt'    && <PromptModelo />}
         {tab === 'apikeys'   && <ApiKeys />}
         {tab === 'whatsapp'  && <IntegracaoWhatsApp />}
+        {tab === 'gcalendar' && <GoogleCalendar />}
         {tab === 'negocio'   && <DadosNegocio />}
         {tab === 'mensagens' && <MensagensCanal />}
         {tab === 'regras'    && <RegrasComportamento />}
