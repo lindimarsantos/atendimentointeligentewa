@@ -222,7 +222,7 @@ BEGIN
       a.tenant_id,
       a.scheduled_start_at,
       cu.full_name                                  AS customer_name,
-      cu.phone                                      AS customer_phone,
+      cu.phone_e164                                 AS customer_phone,
       p.name                                        AS professional_name,
       s.name                                        AS service_name,
       s.preparation_instructions,
@@ -248,7 +248,7 @@ BEGIN
     WHERE a.tenant_id      = p_tenant_id
       AND a.status         = 'scheduled'
       AND a.reminder_sent_at IS NULL
-      AND cu.phone IS NOT NULL
+      AND cu.phone_e164 IS NOT NULL
       AND tc.external_account_id IS NOT NULL
     ORDER BY a.id, a.scheduled_start_at
   )
