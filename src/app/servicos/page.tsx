@@ -17,7 +17,7 @@ import type { Service, Professional, ProfessionalAvailability } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import {
   Scissors, Clock, DollarSign, Search, Users,
-  AlertTriangle, CheckCircle2, Plus, Edit3, Trash2, CalendarDays,
+  AlertTriangle, CheckCircle2, Plus, Edit3, Trash2, CalendarDays, FileText,
 } from 'lucide-react'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -307,6 +307,12 @@ function ServiceCard({
             Requer avaliação
           </span>
         )}
+        {s.preparation_instructions && (
+          <span className="flex items-center gap-1 text-blue-600">
+            <FileText className="h-3.5 w-3.5 shrink-0" />
+            Orientações
+          </span>
+        )}
       </div>
 
       <div className="flex justify-end gap-1 mt-3 pt-2 border-t border-gray-100">
@@ -377,6 +383,7 @@ const defaultService: Partial<Service> = {
   name: '', description: '', duration_minutes: 30,
   price_min: undefined, price_max: undefined,
   requires_evaluation: false, is_active: true,
+  preparation_instructions: '',
 }
 
 const defaultProfessional: Partial<Professional> = {
@@ -610,6 +617,13 @@ export default function ServicosPage() {
             value={svcForm.description ?? ''}
             onChange={(e) => setSvcForm((p) => ({ ...p, description: e.target.value }))}
             placeholder="Breve descrição do serviço..."
+          />
+          <Textarea
+            label="Orientações e Requisitos para o Agendamento"
+            rows={4}
+            value={svcForm.preparation_instructions ?? ''}
+            onChange={(e) => setSvcForm((p) => ({ ...p, preparation_instructions: e.target.value }))}
+            placeholder="Ex: Comparecer em jejum de 4h. Trazer exames anteriores. Evitar uso de cremes..."
           />
           <div className="grid grid-cols-3 gap-3">
             <Input

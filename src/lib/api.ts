@@ -264,8 +264,9 @@ export async function upsertService(data: Partial<Service>): Promise<void> {
     p_duration_minutes:   data.duration_minutes,
     p_price_min:          data.price_min ?? null,
     p_price_max:          data.price_max ?? null,
-    p_requires_evaluation: data.requires_evaluation ?? false,
-    p_is_active:          data.is_active ?? true,
+    p_requires_evaluation:       data.requires_evaluation ?? false,
+    p_is_active:                 data.is_active ?? true,
+    p_preparation_instructions:  data.preparation_instructions ?? null,
   })
 }
 
