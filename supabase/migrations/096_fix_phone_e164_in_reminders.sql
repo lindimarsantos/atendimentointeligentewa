@@ -1,9 +1,5 @@
--- Migration 095: torna p_tenant_id opcional em rpc_n8n_get_appointment_reminders
---
--- Quando p_tenant_id IS NULL, processa TODOS os tenants (mesmo padrão de
--- rpc_n8n_get_scheduling_followup_targets e outros RPCs de workflow n8n).
--- Isso elimina a dependência da variável TENANT_ID no n8n, que não está
--- configurada e causava body {} vazio na chamada HTTP.
+-- Migration 096: corrige cu.phone → cu.phone_e164 em rpc_n8n_get_appointment_reminders
+-- A coluna real em crm.customers é phone_e164 (documentado em migration 025).
 
 CREATE OR REPLACE FUNCTION public.rpc_n8n_get_appointment_reminders(
   p_tenant_id uuid DEFAULT NULL
