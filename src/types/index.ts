@@ -94,6 +94,24 @@ export interface Service {
   preparation_instructions?: string
 }
 
+// ─── Blocked Periods ─────────────────────────────────────────────────────────
+
+export type BlockedPeriodType = 'holiday' | 'professional_vacation' | 'company_recess'
+
+export interface BlockedPeriod {
+  id: string
+  tenant_id: string
+  type: BlockedPeriodType
+  title: string
+  professional_id?: string
+  professional_name?: string
+  start_date: string
+  end_date: string
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}
+
 // ─── Professionals ───────────────────────────────────────────────────────────
 
 export interface Professional {
