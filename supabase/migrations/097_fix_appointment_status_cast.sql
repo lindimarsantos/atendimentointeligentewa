@@ -1,5 +1,5 @@
--- Migration 096: corrige cu.phone → cu.phone_e164 em rpc_n8n_get_appointment_reminders
--- A coluna real em crm.customers é phone_e164 (documentado em migration 025).
+-- Migration 097: corrige cast de enum appointment_status em rpc_n8n_get_appointment_reminders
+-- scheduling.appointments.status é enum; comparar com literal text requer ::text cast.
 
 CREATE OR REPLACE FUNCTION public.rpc_n8n_get_appointment_reminders(
   p_tenant_id uuid DEFAULT NULL

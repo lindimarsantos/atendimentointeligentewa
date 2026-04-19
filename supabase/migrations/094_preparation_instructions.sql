@@ -246,7 +246,7 @@ BEGIN
     JOIN messaging.tenant_channels tc
       ON tc.tenant_id = a.tenant_id AND tc.is_active = true
     WHERE a.tenant_id      = p_tenant_id
-      AND a.status         = 'scheduled'
+      AND a.status::text   = 'scheduled'
       AND a.reminder_sent_at IS NULL
       AND cu.phone_e164 IS NOT NULL
       AND tc.external_account_id IS NOT NULL
