@@ -12,12 +12,14 @@ import {
   listServices, upsertService, deleteService,
   listProfessionals, upsertProfessional, deleteProfessional,
   getProfessionalAvailability, upsertProfessionalAvailability,
+  listBlockedPeriods, upsertBlockedPeriod, deleteBlockedPeriod,
 } from '@/lib/api'
-import type { Service, Professional, ProfessionalAvailability } from '@/types'
+import type { Service, Professional, ProfessionalAvailability, BlockedPeriod, BlockedPeriodType } from '@/types'
 import { toast } from '@/components/ui/Toast'
 import {
   Scissors, Clock, DollarSign, Search, Users,
   AlertTriangle, CheckCircle2, Plus, Edit3, Trash2, CalendarDays, FileText,
+  Ban,
 } from 'lucide-react'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -395,7 +397,39 @@ const defaultProfessional: Partial<Professional> = {
 const pageTabs = [
   { id: 'services',      label: 'Serviços',      icon: Scissors },
   { id: 'professionals', label: 'Profissionais', icon: Users    },
+  { id: 'blocked',       label: 'Bloqueios',     icon: Ban      },
 ]
+
+// ─── Blocked period helpers ───────────────────────────────────────────────────
+
+const BLOCKED_TYPE_LABELS: Record<BlockedPeriodType, string> = {
+  holiday:               'Feriado',
+  professional_vacation: 'Férias',
+  company_recess:        'Recesso',
+}
+
+const BLOCKED_TYPE_COLORS: Record<BlockedPeriodType, string> = {
+  holiday:               'bg-red-100 text-red-700',
+  professional_vacation: 'bg-blue-100 text-blue-700',
+  company_recess:        'bg-amber-100 text-amber-700',
+}
+
+function fmtDateRange(start: string, end: string): string {
+  const fmt = (d: string) => {
+    const [y, m, day] = d.split('-')
+    return `${day}/${m}/${y}`
+  }
+  return start === end ? fmt(start) : `${fmt(start)} – ${fmt(end)}`
+}
+
+const defaultBlocked: Partial<BlockedPeriod> = {
+  type: 'holiday',
+  title: '',
+  professional_id: undefined,
+  start_date: '',
+  end_date: '',
+  is_active: true,
+}
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
@@ -406,6 +440,13 @@ export default function ServicosPage() {
   const [loading, setLoading]             = useState(true)
   const [search, setSearch]               = useState('')
   const [filterActive, setFilterActive]   = useState<'all' | 'active' | 'inactive'>('all')
+
+  const [blockedPeriods, setBlockedPeriods] = useState<BlockedPeriod[]>([])
+
+  // Blocked modal
+  const [blkModal, setBlkModal]   = useState(false)
+  const [blkForm, setBlkForm]     = useState<Partial<BlockedPeriod>>(defaultBlocked)
+  const [blkSaving, setBlkSaving] = useState(false)
 
   // Service modal
   const [svcModal, setSvcModal]   = useState(false)
@@ -422,10 +463,11 @@ export default function ServicosPage() {
 
   const load = () => {
     setLoading(true)
-    Promise.allSettled([listServices(), listProfessionals()])
-      .then(([s, p]) => {
+    Promise.allSettled([listServices(), listProfessionals(), listBlockedPeriods()])
+      .then(([s, p, b]) => {
         if (s.status === 'fulfilled') setServices(s.value)
         if (p.status === 'fulfilled') setProfessionals(p.value)
+        if (b.status === 'fulfilled') setBlockedPeriods(b.value)
       })
       .finally(() => setLoading(false))
   }
@@ -495,6 +537,40 @@ export default function ServicosPage() {
     }
   }
 
+  // ── Blocked CRUD ────────────────────────────────────────────────────────────
+
+  const openNewBlocked   = () => { setBlkForm(defaultBlocked); setBlkModal(true) }
+  const openEditBlocked  = (b: BlockedPeriod) => { setBlkForm({ ...b }); setBlkModal(true) }
+
+  const handleSaveBlocked = async () => {
+    if (!blkForm.title?.trim()) { toast('Título é obrigatório', 'error'); return }
+    if (!blkForm.start_date)    { toast('Data de início é obrigatória', 'error'); return }
+    if (!blkForm.end_date)      { toast('Data de fim é obrigatória', 'error'); return }
+    if (blkForm.end_date! < blkForm.start_date!) { toast('Data de fim deve ser igual ou posterior ao início', 'error'); return }
+    setBlkSaving(true)
+    try {
+      await upsertBlockedPeriod(blkForm)
+      toast(blkForm.id ? 'Bloqueio atualizado' : 'Bloqueio criado')
+      setBlkModal(false)
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao salvar', 'error')
+    } finally {
+      setBlkSaving(false)
+    }
+  }
+
+  const handleDeleteBlocked = async (b: BlockedPeriod) => {
+    if (!confirm(`Excluir bloqueio "${b.title}"?`)) return
+    try {
+      await deleteBlockedPeriod(b.id)
+      toast('Bloqueio excluído')
+      load()
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao excluir', 'error')
+    }
+  }
+
   // ── Filters ─────────────────────────────────────────────────────────────────
 
   const filteredServices = useMemo(() =>
@@ -523,21 +599,28 @@ export default function ServicosPage() {
             {activeProfessionals} profissional{activeProfessionals !== 1 ? 'is' : ''} ativo{activeProfessionals !== 1 ? 's' : ''}
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={tab === 'services' ? openNewService : openNewProfessional}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          {tab === 'services' ? 'Novo serviço' : 'Novo profissional'}
-        </Button>
+        {tab !== 'blocked' ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={tab === 'services' ? openNewService : openNewProfessional}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {tab === 'services' ? 'Novo serviço' : 'Novo profissional'}
+          </Button>
+        ) : (
+          <Button variant="secondary" size="sm" onClick={openNewBlocked}>
+            <Plus className="h-3.5 w-3.5" />
+            Novo bloqueio
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
       <Tabs tabs={pageTabs} active={tab} onChange={(t) => { setTab(t); setSearch('') }} />
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
+      {/* Filters — hidden on blocked tab */}
+      <div className={`flex items-center gap-3 ${tab === 'blocked' ? 'hidden' : ''}`}>
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -566,6 +649,49 @@ export default function ServicosPage() {
       {loading ? (
         <div className="flex items-center justify-center h-48">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-600" />
+        </div>
+      ) : tab === 'blocked' ? (
+        <div className="space-y-2">
+          {blockedPeriods.length === 0 ? (
+            <EmptyState icon={Ban} label="Nenhum bloqueio cadastrado" />
+          ) : (
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-[auto_120px_160px_1fr_80px] bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 px-4 py-2.5 gap-3">
+                <span>Título</span>
+                <span>Tipo</span>
+                <span>Período</span>
+                <span>Profissional</span>
+                <span />
+              </div>
+              {blockedPeriods.map((b) => (
+                <div
+                  key={b.id}
+                  className={`grid grid-cols-[auto_120px_160px_1fr_80px] items-center gap-3 px-4 py-3 border-b last:border-b-0 border-gray-100 ${!b.is_active ? 'opacity-50' : ''}`}
+                >
+                  <span className="text-sm font-medium text-gray-900 truncate">{b.title}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium w-fit ${BLOCKED_TYPE_COLORS[b.type]}`}>
+                    {BLOCKED_TYPE_LABELS[b.type]}
+                  </span>
+                  <span className="text-xs text-gray-600 font-mono">{fmtDateRange(b.start_date, b.end_date)}</span>
+                  <span className="text-xs text-gray-500 truncate">
+                    {b.professional_name ?? <span className="text-gray-400 italic">Empresa toda</span>}
+                  </span>
+                  <div className="flex items-center gap-1 justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => openEditBlocked(b)}>
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost" size="sm"
+                      onClick={() => handleDeleteBlocked(b)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : tab === 'services' ? (
         filteredServices.length === 0 ? (
@@ -709,6 +835,85 @@ export default function ServicosPage() {
             <Button variant="secondary" onClick={() => setProfModal(false)}>Cancelar</Button>
             <Button onClick={handleSaveProfessional} loading={profSaving}>
               {profForm.id ? 'Salvar alterações' : 'Criar profissional'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Blocked Period Modal ───────────────────────────────────────────── */}
+      <Modal
+        open={blkModal}
+        onClose={() => setBlkModal(false)}
+        title={blkForm.id ? 'Editar bloqueio' : 'Novo bloqueio'}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Título *"
+            value={blkForm.title ?? ''}
+            onChange={(e) => setBlkForm((p) => ({ ...p, title: e.target.value }))}
+            placeholder="Ex: Natal, Férias Dr. João, Recesso Janeiro"
+          />
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">Tipo *</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['holiday', 'professional_vacation', 'company_recess'] as BlockedPeriodType[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setBlkForm((p) => ({ ...p, type: t }))}
+                  className={`px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                    blkForm.type === t
+                      ? `${BLOCKED_TYPE_COLORS[t]} border-current`
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  {BLOCKED_TYPE_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Data início *"
+              type="date"
+              value={blkForm.start_date ?? ''}
+              onChange={(e) => setBlkForm((p) => ({ ...p, start_date: e.target.value, end_date: p.end_date || e.target.value }))}
+            />
+            <Input
+              label="Data fim *"
+              type="date"
+              value={blkForm.end_date ?? ''}
+              onChange={(e) => setBlkForm((p) => ({ ...p, end_date: e.target.value }))}
+            />
+          </div>
+
+          {blkForm.type === 'professional_vacation' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">Profissional</label>
+              <select
+                value={blkForm.professional_id ?? ''}
+                onChange={(e) => setBlkForm((p) => ({ ...p, professional_id: e.target.value || undefined }))}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              >
+                <option value="">Todos os profissionais</option>
+                {professionals.filter((p) => p.is_active).map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <Toggle
+            checked={blkForm.is_active ?? true}
+            onChange={(v) => setBlkForm((p) => ({ ...p, is_active: v }))}
+            label="Bloqueio ativo"
+          />
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setBlkModal(false)}>Cancelar</Button>
+            <Button onClick={handleSaveBlocked} loading={blkSaving}>
+              {blkForm.id ? 'Salvar alterações' : 'Criar bloqueio'}
             </Button>
           </div>
         </div>

@@ -50,6 +50,7 @@ import type {
   OperationalStats,
   RecipientFilter,
   ProfessionalCalendar,
+  BlockedPeriod,
 } from '@/types'
 
 async function rpc<T>(name: string, params: Record<string, unknown> = {}): Promise<T> {
@@ -862,6 +863,29 @@ export async function listIntegrationLogs(params: {
     p_limit: params.limit ?? 50,
     p_offset: params.offset ?? 0,
   })
+}
+
+// ─── Blocked Periods ─────────────────────────────────────────────────────────
+
+export async function listBlockedPeriods(): Promise<BlockedPeriod[]> {
+  return rpcList('rpc_list_blocked_periods', { p_tenant_id: getTenantId() })
+}
+
+export async function upsertBlockedPeriod(data: Partial<BlockedPeriod>): Promise<void> {
+  await rpc('rpc_upsert_blocked_period', {
+    p_tenant_id:       getTenantId(),
+    p_id:              data.id ?? null,
+    p_type:            data.type ?? 'holiday',
+    p_title:           data.title,
+    p_professional_id: data.professional_id ?? null,
+    p_start_date:      data.start_date,
+    p_end_date:        data.end_date,
+    p_is_active:       data.is_active ?? true,
+  })
+}
+
+export async function deleteBlockedPeriod(id: string): Promise<void> {
+  await rpc('rpc_delete_blocked_period', { p_tenant_id: getTenantId(), p_id: id })
 }
 
 // ─── Observability ───────────────────────────────────────────────────────────
