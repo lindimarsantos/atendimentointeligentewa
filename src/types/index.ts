@@ -349,6 +349,7 @@ export interface AiAgent {
   status: 'active' | 'inactive'
   model_name: string
   system_prompt: string
+  operational_rules?: string
   temperature: number
   max_tokens: number
   policy_jsonb?: Record<string, unknown>
