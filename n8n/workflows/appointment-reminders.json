@@ -1,0 +1,246 @@
+{
+  "name": "Appointment Reminders — Orientações e Lembrete",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "cron-reminders",
+      "name": "Cron - 30min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [60, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.SUPABASE_URL }}/rest/v1/rpc/rpc_n8n_get_appointment_reminders",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_tenant_id: $vars.TENANT_ID }) }}",
+        "options": {}
+      },
+      "id": "buscar-lembretes",
+      "name": "Buscar Lembretes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [280, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-length",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-tem-lembretes",
+      "name": "Tem Lembretes?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {},
+      "id": "noop-sem-lembretes",
+      "name": "Sem Lembretes",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [500, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "// The RPC returns the entire array as a single JSON item.\n// Expand it so each appointment becomes its own n8n item.\nconst arr = $input.first().json;\nif (!Array.isArray(arr)) return [{ json: arr }];\nreturn arr.map(item => ({ json: item }));"
+      },
+      "id": "expandir-array",
+      "name": "Expandir Array",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "loop-lembretes",
+      "name": "Loop Lembretes",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [940, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst name = (item.customer_name || '').split(' ')[0] || 'Cliente';\nconst serviceName = item.service_name || '';\nconst professionalName = item.professional_name || '';\n\n// Format date/time in BRT\nconst startAt = new Date(item.scheduled_start_at);\nconst datePt = startAt.toLocaleDateString('pt-BR', {\n  weekday: 'long', day: '2-digit', month: 'long',\n  timeZone: 'America/Sao_Paulo'\n});\nconst timePt = startAt.toLocaleTimeString('pt-BR', {\n  hour: '2-digit', minute: '2-digit',\n  timeZone: 'America/Sao_Paulo'\n});\n\nlet message = `Olá, ${name}! 👋\\n\\n`;\nmessage += `📅 *Lembrete de Agendamento*\\n\\n`;\nmessage += `Você tem *${serviceName}* agendado para:\\n`;\nmessage += `📆 ${datePt} às ${timePt}\\n`;\nmessage += `👤 Profissional: ${professionalName}`;\n\nif (item.preparation_instructions && item.preparation_instructions.trim()) {\n  message += `\\n\\n📋 *Orientações e Requisitos:*\\n${item.preparation_instructions.trim()}`;\n}\n\nmessage += `\\n\\nEm caso de dúvidas ou necessidade de reagendamento, é só nos avisar! 😊`;\n\nreturn [{ json: { ...item, reminder_message: message } }];"
+      },
+      "id": "montar-mensagem",
+      "name": "Montar Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1160, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.z-api.io/instances/{{ $json.zapi_instance_id }}/token/{{ $json.zapi_token }}/send-text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Client-Token",
+              "value": "={{ $json.zapi_client_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ phone: $json.customer_phone, message: $json.reminder_message }) }}",
+        "options": {}
+      },
+      "id": "enviar-lembrete",
+      "name": "Enviar Lembrete WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1380, 300]
+    }
+  ],
+  "connections": {
+    "Cron - 30min": {
+      "main": [
+        [
+          {
+            "node": "Buscar Lembretes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Lembretes": {
+      "main": [
+        [
+          {
+            "node": "Tem Lembretes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Lembretes?": {
+      "main": [
+        [
+          {
+            "node": "Expandir Array",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sem Lembretes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expandir Array": {
+      "main": [
+        [
+          {
+            "node": "Loop Lembretes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Lembretes": {
+      "main": [
+        [
+          {
+            "node": "Montar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Montar Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Enviar Lembrete WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Lembrete WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Loop Lembretes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-04-19T00:00:00.000Z",
+  "versionId": "appointment-reminders-v1"
+}

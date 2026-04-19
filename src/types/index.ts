@@ -91,6 +91,7 @@ export interface Service {
   price_max?: number
   requires_evaluation: boolean
   is_active: boolean
+  preparation_instructions?: string
 }
 
 // ─── Professionals ───────────────────────────────────────────────────────────
