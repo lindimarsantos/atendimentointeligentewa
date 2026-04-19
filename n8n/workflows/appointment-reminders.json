@@ -39,15 +39,7 @@
             }
           ]
         },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "p_tenant_id",
-              "value": "={{ $vars.TENANT_ID }}"
-            }
-          ]
-        },
+        "sendBody": false,
         "options": {}
       },
       "id": "buscar-lembretes",
