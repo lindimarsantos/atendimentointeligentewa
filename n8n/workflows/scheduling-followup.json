@@ -99,6 +99,19 @@
       ]
     },
     {
+      "parameters": {
+        "jsCode": "// The RPC returns the entire array as a single JSON item.\n// Expand it so each conversation becomes its own n8n item.\nconst arr = $input.first().json;\nif (!Array.isArray(arr)) return [{ json: arr }];\nreturn arr.map(item => ({ json: item }));"
+      },
+      "id": "expandir-array",
+      "name": "Expandir Array",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        300
+      ]
+    },
+    {
       "parameters": {},
       "id": "noop-sem-targets",
       "name": "Sem Conversas",
@@ -160,20 +173,20 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        740,
+        960,
         300
       ]
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst name = (item.customer_name || '').split(' ')[0] || '';\nconst template = item.followup_message_template || '';\n// Replace {{nome}} placeholder if present, otherwise prepend greeting\nlet message;\nif (template.includes('{{nome}}')) {\n  message = template.replace(/{{nome}}/g, name);\n} else if (name) {\n  message = 'Olá, ' + name + '! ' + template;\n} else {\n  message = template;\n}\nreturn [{ json: { ...item, followup_message: message } }];"
+        "jsCode": "const item = $input.first().json;\nconst name = (item.customer_name || '').split(' ')[0] || '';\nconst template = item.followup_message_template || '';\nlet message;\nif (template.includes('{{nome}}')) {\n  message = template.replace(/{{nome}}/g, name);\n} else if (name) {\n  message = 'Olá, ' + name + '! ' + template;\n} else {\n  message = template;\n}\nreturn [{ json: { ...item, followup_message: message } }];"
       },
       "id": "montar-mensagem",
       "name": "Montar Mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
+        1180,
         300
       ]
     },
@@ -204,7 +217,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1180,
+        1400,
         300
       ]
     },
@@ -245,7 +258,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1400,
+        1620,
         300
       ]
     }
@@ -277,7 +290,7 @@
       "main": [
         [
           {
-            "node": "Loop Conversas",
+            "node": "Expandir Array",
             "type": "main",
             "index": 0
           }
@@ -285,6 +298,28 @@
         [
           {
             "node": "Sem Conversas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expandir Array": {
+      "main": [
+        [
+          {
+            "node": "Loop Conversas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sem Conversas": {
+      "main": [
+        [
+          {
+            "node": "Encerrar Inativas",
             "type": "main",
             "index": 0
           }
@@ -300,17 +335,6 @@
             "index": 0
           }
         ],
-        [
-          {
-            "node": "Encerrar Inativas",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sem Conversas": {
-      "main": [
         [
           {
             "node": "Encerrar Inativas",
@@ -361,6 +385,6 @@
   "staticData": null,
   "tags": [],
   "triggerCount": 0,
-  "updatedAt": "2026-04-16T00:00:00.000Z",
-  "versionId": "scheduling-followup-v1"
+  "updatedAt": "2026-04-19T00:00:00.000Z",
+  "versionId": "scheduling-followup-v2"
 }
