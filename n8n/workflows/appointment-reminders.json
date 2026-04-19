@@ -40,8 +40,14 @@
           ]
         },
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_tenant_id: $vars.TENANT_ID }) }}",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "p_tenant_id",
+              "value": "={{ $vars.TENANT_ID }}"
+            }
+          ]
+        },
         "options": {}
       },
       "id": "buscar-lembretes",
@@ -136,8 +142,18 @@
           ]
         },
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ phone: $json.customer_phone, message: $json.reminder_message }) }}",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $json.customer_phone }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.reminder_message }}"
+            }
+          ]
+        },
         "options": {}
       },
       "id": "enviar-lembrete",
