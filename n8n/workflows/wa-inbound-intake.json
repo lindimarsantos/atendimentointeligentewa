@@ -160,7 +160,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"p_tenant_id\": \"{{ $('Normalizar Payload').item.json.tenant_id }}\",\n  \"p_conversation_id\": \"{{ $('Abrir Conversa').item.json.conversation_id }}\",\n  \"p_customer_id\": \"{{ $('Upsert Cliente').item.json.customer_id }}\",\n  \"p_message_type\": \"{{ $('Normalizar Payload').item.json.message_type }}\",\n  \"p_content_text\": \"{{ $('Normalizar Payload').item.json.content_text }}\",\n  \"p_media_url\": \"{{ $('Normalizar Payload').item.json.media_url }}\",\n  \"p_external_message_id\": \"{{ $('Normalizar Payload').item.json.external_message_id }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({\n  p_tenant_id:           $('Normalizar Payload').item.json.tenant_id,\n  p_conversation_id:     $('Abrir Conversa').item.json.conversation_id,\n  p_customer_id:         $('Upsert Cliente').item.json.customer_id,\n  p_message_type:        $('Normalizar Payload').item.json.message_type,\n  p_content_text:        $('Normalizar Payload').item.json.content_text,\n  p_media_url:           $('Normalizar Payload').item.json.media_url,\n  p_external_message_id: $('Normalizar Payload').item.json.external_message_id\n}) }}",
         "options": {}
       },
       "id": "883645d3-cf6d-46f7-9531-d9a5b9d29a7c",
