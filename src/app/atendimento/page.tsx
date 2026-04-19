@@ -91,8 +91,8 @@ function HandoffQueue() {
       <Card>
         <div className="flex flex-col items-center justify-center py-16 text-gray-400">
           <HandMetal className="h-10 w-10 mb-3" />
-          <p className="text-sm font-medium">Nenhum handoff pendente</p>
-          <p className="text-xs mt-1">Todas as conversas estão sendo atendidas pelo bot.</p>
+          <p className="text-sm font-medium">Nenhum handoff aguardando aceite</p>
+          <p className="text-xs mt-1">Nenhuma conversa aguarda transferência para humano no momento.</p>
         </div>
       </Card>
     )
