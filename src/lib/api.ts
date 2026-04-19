@@ -452,13 +452,14 @@ export async function getAiAgent(): Promise<AiAgent | null> {
 
 export async function updateAiAgent(data: Partial<AiAgent>): Promise<void> {
   await rpc('rpc_update_ai_agent', {
-    p_tenant_id: getTenantId(),
-    p_name: data.name,
-    p_model_name: data.model_name,
-    p_system_prompt: data.system_prompt,
-    p_temperature: data.temperature,
-    p_max_tokens: data.max_tokens,
-    p_tools_jsonb: data.tools_jsonb ?? null,
+    p_tenant_id:         getTenantId(),
+    p_name:              data.name,
+    p_model_name:        data.model_name,
+    p_system_prompt:     data.system_prompt,
+    p_operational_rules: data.operational_rules ?? null,
+    p_temperature:       data.temperature,
+    p_max_tokens:        data.max_tokens,
+    p_tools_jsonb:       data.tools_jsonb ?? null,
   })
 }
 

@@ -22,6 +22,7 @@ const DEFAULT_AGENT: AiAgent = {
   status: 'active',
   model_name: 'claude-sonnet-4-20250514',
   system_prompt: '',
+  operational_rules: '',
   temperature: 0.7,
   max_tokens: 2048,
   updated_at: '',
@@ -233,6 +234,24 @@ export function PromptModelo() {
               <div className="mt-2 xl:hidden">
                 <VariablesReference />
               </div>
+            </div>
+
+            <div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700">Regras operacionais</label>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Controla como o agente usa as ferramentas (agendamento, escalação, encerramento).
+                  Adicionado automaticamente após o system prompt em cada conversa.
+                </p>
+              </div>
+              <textarea
+                rows={14}
+                value={agent.operational_rules ?? ''}
+                onChange={(e) => set('operational_rules', e.target.value)}
+                className="prompt-editor block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-y font-mono"
+                placeholder="=== REGRAS OBRIGATÓRIAS ===&#10;- Use confirmar_agendamento SOMENTE após..."
+                spellCheck={false}
+              />
             </div>
 
             <div className="flex justify-end">
